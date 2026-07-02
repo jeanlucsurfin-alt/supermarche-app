@@ -237,22 +237,26 @@ class _PosScreenState extends State<PosScreen> {
                         const Icon(Icons.shopping_bag_outlined,
                             color: AppColors.navy, size: 20),
                         const SizedBox(width: 8),
-                        Text('Panier',
-                            style: Theme.of(context).textTheme.titleLarge),
-                        const Spacer(),
+                        Flexible(
+                          child: Text('Panier',
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.titleLarge),
+                        ),
+                        const SizedBox(width: 8),
                         if (cart.itemCount > 0)
                           Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 4),
+                            width: 24,
+                            height: 24,
                             decoration: BoxDecoration(
                               color: AppColors.gold.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(20),
+                              shape: BoxShape.circle,
                             ),
+                            alignment: Alignment.center,
                             child: Text(
-                              '${cart.itemCount} article${cart.itemCount > 1 ? 's' : ''}',
+                              '${cart.itemCount}',
                               style: const TextStyle(
                                 color: AppColors.navy,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w700,
                                 fontSize: 12,
                               ),
                             ),
@@ -291,48 +295,80 @@ class _PosScreenState extends State<PosScreen> {
                                   color: AppColors.background,
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: Row(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(item.productName,
-                                              style: const TextStyle(
-                                                  fontWeight: FontWeight.w600,
-                                                  fontSize: 13)),
-                                          Text(
-                                            _currencyFormat.format(item.unitPrice).replaceAll(' ', '\u00A0'),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            item.productName,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                             style: const TextStyle(
-                                                color: AppColors.textSecondary,
-                                                fontSize: 12),
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 13),
                                           ),
-                                        ],
-                                      ),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(
+                                              Icons.close_rounded,
+                                              size: 16,
+                                              color: AppColors.textSecondary),
+                                          constraints:
+                                              const BoxConstraints(),
+                                          padding: EdgeInsets.zero,
+                                          onPressed: () => context
+                                              .read<CartProvider>()
+                                              .removeProduct(item.productId),
+                                        ),
+                                      ],
                                     ),
-                                    _QtyButton(
-                                      icon: Icons.remove_rounded,
-                                      onTap: () => context
-                                          .read<CartProvider>()
-                                          .decreaseQuantity(item.productId),
-                                    ),
-                                    SizedBox(
-                                      width: 28,
-                                      child: Text('${item.quantity}',
-                                          textAlign: TextAlign.center,
+                                    const SizedBox(height: 6),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          _currencyFormat
+                                              .format(item.unitPrice)
+                                              .replaceAll(' ', '\u00A0'),
                                           style: const TextStyle(
-                                              fontWeight: FontWeight.w700)),
-                                    ),
-                                    _QtyButton(
-                                      icon: Icons.add_rounded,
-                                      onTap: () {
-                                        final product = _products.firstWhere(
-                                            (p) => p.id == item.productId);
-                                        context
-                                            .read<CartProvider>()
-                                            .addProduct(product);
-                                      },
+                                              color: AppColors.textSecondary,
+                                              fontSize: 12),
+                                        ),
+                                        Row(
+                                          children: [
+                                            _QtyButton(
+                                              icon: Icons.remove_rounded,
+                                              onTap: () => context
+                                                  .read<CartProvider>()
+                                                  .decreaseQuantity(
+                                                      item.productId),
+                                            ),
+                                            SizedBox(
+                                              width: 28,
+                                              child: Text('${item.quantity}',
+                                                  textAlign: TextAlign.center,
+                                                  style: const TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.w700)),
+                                            ),
+                                            _QtyButton(
+                                              icon: Icons.add_rounded,
+                                              onTap: () {
+                                                final product = _products
+                                                    .firstWhere((p) =>
+                                                        p.id ==
+                                                        item.productId);
+                                                context
+                                                    .read<CartProvider>()
+                                                    .addProduct(product);
+                                              },
+                                            ),
+                                          ],
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
