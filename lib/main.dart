@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/cart_provider.dart';
-import 'screens/pos_screen.dart';
+import 'screens/main_shell.dart';
 import 'theme/app_theme.dart';
 
 void main() {
@@ -21,7 +21,7 @@ class FafouttStoreApp extends StatelessWidget {
         title: 'Fafoutt Store',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.theme,
-        home: const PosScreen(),
+        home: const MainShell(),
       ),
     );
   }

@@ -2,6 +2,8 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/product.dart';
 import '../models/sale.dart';
+import '../models/supplier.dart';
+import '../models/stock_movement.dart';
 
 class DatabaseService {
   static final DatabaseService _instance = DatabaseService._internal();
@@ -19,13 +21,15 @@ class DatabaseService {
     final path = join(await getDatabasesPath(), 'fafoutt_store.db');
     return await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: _onCreate,
       onUpgrade: (db, oldVersion, newVersion) async {
         await db.execute('DROP TABLE IF EXISTS sale_items');
         await db.execute('DROP TABLE IF EXISTS sales');
         await db.execute('DROP TABLE IF EXISTS products');
         await db.execute('DROP TABLE IF EXISTS employees');
+        await db.execute('DROP TABLE IF EXISTS suppliers');
+        await db.execute('DROP TABLE IF EXISTS stock_movements');
         await _onCreate(db, newVersion);
       },
     );
@@ -75,6 +79,28 @@ class DatabaseService {
         name TEXT NOT NULL,
         role TEXT NOT NULL,
         pin TEXT NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE suppliers(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        address TEXT
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE stock_movements(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        productId INTEGER NOT NULL,
+        productName TEXT NOT NULL,
+        type TEXT NOT NULL,
+        quantity INTEGER NOT NULL,
+        reason TEXT,
+        supplierId INTEGER,
+        date TEXT NOT NULL
       )
     ''');
 
@@ -195,6 +221,18 @@ class DatabaseService {
       'stockQuantity': 14,
       'lowStockThreshold': 5,
     });
+
+    // Fournisseurs d'exemple
+    await db.insert('suppliers', {
+      'name': 'Distributions Caraïbes',
+      'phone': '+509 3456 7890',
+      'address': 'Delmas 33, Port-au-Prince',
+    });
+    await db.insert('suppliers', {
+      'name': 'Import Export Fafoutt',
+      'phone': '+509 4321 0987',
+      'address': 'Pétion-Ville',
+    });
   }
 
   // ---- PRODUITS ----
@@ -282,5 +320,78 @@ class DatabaseService {
       whereArgs: [start.toIso8601String(), end.toIso8601String()],
       orderBy: 'date DESC',
     );
+  }
+
+  // ---- FOURNISSEURS ----
+  Future<List<Supplier>> getAllSuppliers() async {
+    final db = await database;
+    final maps = await db.query('suppliers', orderBy: 'name');
+    return maps.map((m) => Supplier.fromMap(m)).toList();
+  }
+
+  Future<int> insertSupplier(Supplier supplier) async {
+    final db = await database;
+    return await db.insert('suppliers', supplier.toMap()..remove('id'));
+  }
+
+  Future<void> deleteSupplier(int id) async {
+    final db = await database;
+    await db.delete('suppliers', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // ---- MOUVEMENTS DE STOCK ----
+  Future<List<StockMovement>> getAllMovements() async {
+    final db = await database;
+    final maps = await db.query('stock_movements', orderBy: 'date DESC');
+    return maps.map((m) => StockMovement.fromMap(m)).toList();
+  }
+
+  Future<List<StockMovement>> getMovementsForProduct(int productId) async {
+    final db = await database;
+    final maps = await db.query(
+      'stock_movements',
+      where: 'productId = ?',
+      whereArgs: [productId],
+      orderBy: 'date DESC',
+    );
+    return maps.map((m) => StockMovement.fromMap(m)).toList();
+  }
+
+  /// Enregistre un mouvement de stock (entrée/sortie/ajustement)
+  /// et met à jour la quantité du produit en conséquence.
+  Future<void> recordMovement(StockMovement movement) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.insert('stock_movements', movement.toMap()..remove('id'));
+
+      final rows = await txn.query(
+        'products',
+        where: 'id = ?',
+        whereArgs: [movement.productId],
+      );
+      if (rows.isEmpty) return;
+      final currentStock = rows.first['stockQuantity'] as int;
+
+      int newStock;
+      switch (movement.type) {
+        case MovementType.entry:
+          newStock = currentStock + movement.quantity;
+          break;
+        case MovementType.exit:
+          newStock = currentStock - movement.quantity;
+          break;
+        case MovementType.adjustment:
+          newStock = movement.quantity;
+          break;
+      }
+      if (newStock < 0) newStock = 0;
+
+      await txn.update(
+        'products',
+        {'stockQuantity': newStock},
+        where: 'id = ?',
+        whereArgs: [movement.productId],
+      );
+    });
   }
 }
