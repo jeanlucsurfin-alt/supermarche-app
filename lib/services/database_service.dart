@@ -408,6 +408,69 @@ class DatabaseService {
     );
   }
 
+  /// Résumé des ventes sur une période : chiffre d'affaires, bénéfice
+  /// estimé (basé sur les prix d'achat actuels), nombre de transactions.
+  Future<Map<String, double>> getSalesSummary(
+      DateTime start, DateTime end) async {
+    final db = await database;
+
+    final revenueResult = await db.rawQuery('''
+      SELECT COUNT(*) as cnt, COALESCE(SUM(total), 0) as revenue
+      FROM sales
+      WHERE date BETWEEN ? AND ?
+    ''', [start.toIso8601String(), end.toIso8601String()]);
+
+    final costResult = await db.rawQuery('''
+      SELECT COALESCE(SUM(p.purchasePrice * si.quantity), 0) as cost
+      FROM sale_items si
+      JOIN sales s ON s.id = si.saleId
+      LEFT JOIN products p ON p.id = si.productId
+      WHERE s.date BETWEEN ? AND ?
+    ''', [start.toIso8601String(), end.toIso8601String()]);
+
+    final transactionCount =
+        (revenueResult.first['cnt'] as int?)?.toDouble() ?? 0;
+    final revenue =
+        (revenueResult.first['revenue'] as num?)?.toDouble() ?? 0;
+    final cost = (costResult.first['cost'] as num?)?.toDouble() ?? 0;
+
+    return {
+      'transactionCount': transactionCount,
+      'revenue': revenue,
+      'profit': revenue - cost,
+      'averageBasket': transactionCount > 0 ? revenue / transactionCount : 0,
+    };
+  }
+
+  /// Produits les plus vendus sur une période.
+  Future<List<Map<String, dynamic>>> getTopProducts(
+      DateTime start, DateTime end, {int limit = 5}) async {
+    final db = await database;
+    return await db.rawQuery('''
+      SELECT si.productName as name,
+             SUM(si.quantity) as quantity,
+             SUM(si.unitPrice * si.quantity) as revenue
+      FROM sale_items si
+      JOIN sales s ON s.id = si.saleId
+      WHERE s.date BETWEEN ? AND ?
+      GROUP BY si.productName
+      ORDER BY quantity DESC
+      LIMIT ?
+    ''', [start.toIso8601String(), end.toIso8601String(), limit]);
+  }
+
+  /// Ventes groupées par mode de paiement sur une période.
+  Future<List<Map<String, dynamic>>> getSalesByPaymentMethod(
+      DateTime start, DateTime end) async {
+    final db = await database;
+    return await db.rawQuery('''
+      SELECT paymentMethod, COUNT(*) as cnt, COALESCE(SUM(total), 0) as revenue
+      FROM sales
+      WHERE date BETWEEN ? AND ?
+      GROUP BY paymentMethod
+    ''', [start.toIso8601String(), end.toIso8601String()]);
+  }
+
   // ---- FOURNISSEURS ----
   Future<List<Supplier>> getAllSuppliers() async {
     final db = await database;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import 'pos_screen.dart';
+import 'reports_screen.dart';
 import 'stock_screen.dart';
 
 class MainShell extends StatefulWidget {
@@ -16,6 +17,7 @@ class _MainShellState extends State<MainShell> {
   final _screens = const [
     PosScreen(),
     StockScreen(),
+    ReportsScreen(),
   ];
 
   @override
@@ -49,6 +51,11 @@ class _MainShellState extends State<MainShell> {
               icon: Icon(Icons.inventory_2_outlined, color: AppColors.textSecondary),
               selectedIcon: Icon(Icons.inventory_2_rounded, color: AppColors.navy),
               label: 'Stocks',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.bar_chart_outlined, color: AppColors.textSecondary),
+              selectedIcon: Icon(Icons.bar_chart_rounded, color: AppColors.navy),
+              label: 'Rapports',
             ),
           ],
         ),

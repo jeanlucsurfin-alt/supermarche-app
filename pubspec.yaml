@@ -30,6 +30,7 @@ dependencies:
 
   # Partage de fichiers
   share_plus: ^7.2.1
+  path_provider: ^2.1.1
 
   # Icônes et UI
   google_fonts: ^6.1.0
