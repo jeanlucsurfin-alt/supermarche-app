@@ -459,12 +459,17 @@ class _ProductCard extends StatelessWidget {
                     fontWeight: FontWeight.w600, fontSize: 12.5, height: 1.2),
               ),
               const SizedBox(height: 4),
-              Text(
-                currencyFormat.format(product.sellPrice).replaceAll(' ', '\u00A0'),
-                style: const TextStyle(
-                  color: AppColors.gold,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  currencyFormat.format(product.sellPrice),
+                  maxLines: 1,
+                  style: const TextStyle(
+                    color: AppColors.gold,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
                 ),
               ),
               if (product.isLowStock)
