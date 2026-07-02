@@ -1,4 +1,4 @@
-# Application Supermarché — Guide de démarrage
+# Fafoutt Store — Guide de démarrage
 
 ## Ce qui est déjà fait (Module 1 : POS)
 - Écran de vente avec grille de produits + recherche

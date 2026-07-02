@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/cart_provider.dart';
 import 'screens/pos_screen.dart';
+import 'theme/app_theme.dart';
 
 void main() {
-  runApp(const SupermarcheApp());
+  runApp(const FafouttStoreApp());
 }
 
-class SupermarcheApp extends StatelessWidget {
-  const SupermarcheApp({super.key});
+class FafouttStoreApp extends StatelessWidget {
+  const FafouttStoreApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -17,18 +18,9 @@ class SupermarcheApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CartProvider()),
       ],
       child: MaterialApp(
-        title: 'Gestion Supermarché',
+        title: 'Fafoutt Store',
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1E3A8A)),
-          useMaterial3: true,
-          appBarTheme: const AppBarTheme(
-            backgroundColor: Color(0xFF1E3A8A),
-            foregroundColor: Colors.white,
-            elevation: 0,
-          ),
-        ),
+        theme: AppTheme.theme,
         home: const PosScreen(),
       ),
     );

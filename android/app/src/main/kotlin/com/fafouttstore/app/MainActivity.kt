@@ -1,4 +1,4 @@
-package com.supermarche.app
+package com.fafouttstore.app
 
 import io.flutter.embedding.android.FlutterActivity
 
