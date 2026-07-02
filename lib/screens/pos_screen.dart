@@ -169,23 +169,37 @@ class _PosScreenState extends State<PosScreen> {
                             ],
                           ),
                         )
-                      : GridView.builder(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 3,
-                            childAspectRatio: 1.15,
-                            crossAxisSpacing: 12,
-                            mainAxisSpacing: 12,
-                          ),
-                          itemCount: _filteredProducts.length,
-                          itemBuilder: (context, index) {
-                            final product = _filteredProducts[index];
-                            return _ProductCard(
-                              product: product,
-                              currencyFormat: _currencyFormat,
-                              onTap: () =>
-                                  context.read<CartProvider>().addProduct(product),
+                      : LayoutBuilder(
+                          builder: (context, constraints) {
+                            final width = constraints.maxWidth;
+                            final crossAxisCount = width > 900
+                                ? 5
+                                : width > 650
+                                    ? 4
+                                    : width > 420
+                                        ? 3
+                                        : 2;
+                            return GridView.builder(
+                              padding:
+                                  const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: crossAxisCount,
+                                childAspectRatio: 0.82,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                              ),
+                              itemCount: _filteredProducts.length,
+                              itemBuilder: (context, index) {
+                                final product = _filteredProducts[index];
+                                return _ProductCard(
+                                  product: product,
+                                  currencyFormat: _currencyFormat,
+                                  onTap: () => context
+                                      .read<CartProvider>()
+                                      .addProduct(product),
+                                );
+                              },
                             );
                           },
                         ),
