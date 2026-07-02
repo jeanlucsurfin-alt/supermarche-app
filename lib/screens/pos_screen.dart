@@ -3,10 +3,12 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/product.dart';
 import '../providers/cart_provider.dart';
+import '../providers/category_provider.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/fafoutt_logo.dart';
 import 'barcode_scanner_screen.dart';
+import 'categories_screen.dart';
 import 'checkout_screen.dart';
 
 class PosScreen extends StatefulWidget {
@@ -40,8 +42,8 @@ class _PosScreenState extends State<PosScreen> {
   }
 
   List<String> get _categories {
-    final cats = _products.map((p) => p.category).toSet().toList()..sort();
-    return ['Tout', ...cats];
+    final providerNames = context.read<CategoryProvider>().names;
+    return ['Tout', ...providerNames];
   }
 
   void _applyFilters() {
@@ -90,6 +92,17 @@ class _PosScreenState extends State<PosScreen> {
       appBar: AppBar(
         title: const FafouttHeader(subtitle: 'Point de Vente'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.category_outlined),
+            tooltip: 'Gérer les catégories',
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const CategoriesScreen()),
+              );
+              if (mounted) setState(() {});
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.qr_code_scanner_rounded),
             tooltip: 'Scanner un code-barres',
@@ -383,40 +396,6 @@ class _PosScreenState extends State<PosScreen> {
   }
 }
 
-Color _categoryColor(String category) {
-  switch (category) {
-    case 'Épicerie':
-      return const Color(0xFF1F9D55);
-    case 'Cosmétique':
-      return const Color(0xFFD6559D);
-    case 'Vêtements':
-      return const Color(0xFF2F6FED);
-    case 'Électronique':
-      return const Color(0xFF6B5CE0);
-    case 'Home Decor':
-      return const Color(0xFFC97A3D);
-    default:
-      return AppColors.navy;
-  }
-}
-
-IconData _categoryIcon(String category) {
-  switch (category) {
-    case 'Épicerie':
-      return Icons.local_grocery_store_rounded;
-    case 'Cosmétique':
-      return Icons.spa_rounded;
-    case 'Vêtements':
-      return Icons.checkroom_rounded;
-    case 'Électronique':
-      return Icons.devices_rounded;
-    case 'Home Decor':
-      return Icons.chair_rounded;
-    default:
-      return Icons.inventory_2_rounded;
-  }
-}
-
 class _ProductCard extends StatelessWidget {
   final Product product;
   final NumberFormat currencyFormat;
@@ -430,6 +409,9 @@ class _ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final categoryProvider = context.watch<CategoryProvider>();
+    final catColor = categoryProvider.colorFor(product.category);
+    final catIcon = categoryProvider.iconFor(product.category);
     return Card(
       child: InkWell(
         onTap: onTap,
@@ -443,12 +425,11 @@ class _ProductCard extends StatelessWidget {
                 width: 34,
                 height: 34,
                 decoration: BoxDecoration(
-                  color: _categoryColor(product.category).withOpacity(0.12),
+                  color: catColor.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 alignment: Alignment.center,
-                child: Icon(_categoryIcon(product.category),
-                    color: _categoryColor(product.category), size: 18),
+                child: Icon(catIcon, color: catColor, size: 18),
               ),
               const Spacer(),
               Text(

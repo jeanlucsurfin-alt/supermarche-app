@@ -1,46 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/product.dart';
 import '../models/stock_movement.dart';
 import '../models/supplier.dart';
+import '../providers/category_provider.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/fafoutt_logo.dart';
+import 'categories_screen.dart';
 import 'suppliers_screen.dart';
-
-IconData categoryIconOf(String category) {
-  switch (category) {
-    case 'Épicerie':
-      return Icons.local_grocery_store_rounded;
-    case 'Cosmétique':
-      return Icons.spa_rounded;
-    case 'Vêtements':
-      return Icons.checkroom_rounded;
-    case 'Électronique':
-      return Icons.devices_rounded;
-    case 'Home Decor':
-      return Icons.chair_rounded;
-    default:
-      return Icons.inventory_2_rounded;
-  }
-}
-
-Color categoryColorOf(String category) {
-  switch (category) {
-    case 'Épicerie':
-      return const Color(0xFF1F9D55);
-    case 'Cosmétique':
-      return const Color(0xFFD6559D);
-    case 'Vêtements':
-      return const Color(0xFF2F6FED);
-    case 'Électronique':
-      return const Color(0xFF6B5CE0);
-    case 'Home Decor':
-      return const Color(0xFFC97A3D);
-    default:
-      return AppColors.navy;
-  }
-}
 
 class StockScreen extends StatefulWidget {
   const StockScreen({super.key});
@@ -103,6 +72,17 @@ class _StockScreenState extends State<StockScreen> {
       appBar: AppBar(
         title: const FafouttHeader(subtitle: 'Gestion des stocks'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.category_outlined),
+            tooltip: 'Gérer les catégories',
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const CategoriesScreen()),
+              );
+              if (mounted) setState(() {});
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.local_shipping_outlined),
             tooltip: 'Fournisseurs',
@@ -211,6 +191,9 @@ class _StockTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final expiry = _expiryLabel();
+    final categoryProvider = context.watch<CategoryProvider>();
+    final catColor = categoryProvider.colorFor(product.category);
+    final catIcon = categoryProvider.iconFor(product.category);
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: InkWell(
@@ -224,12 +207,11 @@ class _StockTile extends StatelessWidget {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: categoryColorOf(product.category).withOpacity(0.12),
+                  color: catColor.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(11),
                 ),
                 alignment: Alignment.center,
-                child: Icon(categoryIconOf(product.category),
-                    color: categoryColorOf(product.category), size: 20),
+                child: Icon(catIcon, color: catColor, size: 20),
               ),
               const SizedBox(width: 12),
               Expanded(

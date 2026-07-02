@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/cart_provider.dart';
+import 'providers/category_provider.dart';
 import 'screens/main_shell.dart';
 import 'theme/app_theme.dart';
 
@@ -16,6 +17,7 @@ class FafouttStoreApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => CartProvider()),
+        ChangeNotifierProvider(create: (_) => CategoryProvider()..load()),
       ],
       child: MaterialApp(
         title: 'Fafoutt Store',

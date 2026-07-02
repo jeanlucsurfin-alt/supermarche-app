@@ -32,5 +32,5 @@ jobs:
       - name: Publier l'APK comme artefact
         uses: actions/upload-artifact@v4
         with:
-          name: fafoutt-store-apk
+          name: supermarche-apk
           path: build/app/outputs/flutter-apk/app-release.apk

@@ -4,6 +4,7 @@ import '../models/product.dart';
 import '../models/sale.dart';
 import '../models/supplier.dart';
 import '../models/stock_movement.dart';
+import '../models/category.dart';
 
 class DatabaseService {
   static final DatabaseService _instance = DatabaseService._internal();
@@ -21,7 +22,7 @@ class DatabaseService {
     final path = join(await getDatabasesPath(), 'fafoutt_store.db');
     return await openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: _onCreate,
       onUpgrade: (db, oldVersion, newVersion) async {
         await db.execute('DROP TABLE IF EXISTS sale_items');
@@ -30,6 +31,7 @@ class DatabaseService {
         await db.execute('DROP TABLE IF EXISTS employees');
         await db.execute('DROP TABLE IF EXISTS suppliers');
         await db.execute('DROP TABLE IF EXISTS stock_movements');
+        await db.execute('DROP TABLE IF EXISTS categories');
         await _onCreate(db, newVersion);
       },
     );
@@ -103,6 +105,42 @@ class DatabaseService {
         date TEXT NOT NULL
       )
     ''');
+
+    await db.execute('''
+      CREATE TABLE categories(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        iconKey TEXT NOT NULL,
+        colorValue INTEGER NOT NULL
+      )
+    ''');
+
+    // Catégories de départ
+    await db.insert('categories', {
+      'name': 'Épicerie',
+      'iconKey': 'grocery',
+      'colorValue': 0xFF1F9D55,
+    });
+    await db.insert('categories', {
+      'name': 'Cosmétique',
+      'iconKey': 'spa',
+      'colorValue': 0xFFD6559D,
+    });
+    await db.insert('categories', {
+      'name': 'Vêtements',
+      'iconKey': 'clothing',
+      'colorValue': 0xFF2F6FED,
+    });
+    await db.insert('categories', {
+      'name': 'Électronique',
+      'iconKey': 'electronics',
+      'colorValue': 0xFF6B5CE0,
+    });
+    await db.insert('categories', {
+      'name': 'Home Decor',
+      'iconKey': 'home',
+      'colorValue': 0xFFC97A3D,
+    });
 
     // Produits d'exemple pour démarrer
     await db.insert('products', {
@@ -393,5 +431,22 @@ class DatabaseService {
         whereArgs: [movement.productId],
       );
     });
+  }
+
+  // ---- CATÉGORIES ----
+  Future<List<Category>> getAllCategories() async {
+    final db = await database;
+    final maps = await db.query('categories', orderBy: 'name');
+    return maps.map((m) => Category.fromMap(m)).toList();
+  }
+
+  Future<int> insertCategory(Category category) async {
+    final db = await database;
+    return await db.insert('categories', category.toMap()..remove('id'));
+  }
+
+  Future<void> deleteCategory(int id) async {
+    final db = await database;
+    await db.delete('categories', where: 'id = ?', whereArgs: [id]);
   }
 }
