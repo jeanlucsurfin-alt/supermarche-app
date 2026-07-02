@@ -241,7 +241,7 @@ class _StockTile extends StatelessWidget {
                             fontWeight: FontWeight.w600, fontSize: 14)),
                     const SizedBox(height: 2),
                     Text(
-                      '${product.category} · ${currencyFormat.format(product.sellPrice)}',
+                      '${product.category} · ${currencyFormat.format(product.sellPrice).replaceAll(' ', '\u00A0')}',
                       style: const TextStyle(
                           color: AppColors.textSecondary, fontSize: 12),
                     ),

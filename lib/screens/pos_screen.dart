@@ -290,8 +290,7 @@ class _PosScreenState extends State<PosScreen> {
                                                   fontWeight: FontWeight.w600,
                                                   fontSize: 13)),
                                           Text(
-                                            _currencyFormat
-                                                .format(item.unitPrice),
+                                            _currencyFormat.format(item.unitPrice).replaceAll(' ', '\u00A0'),
                                             style: const TextStyle(
                                                 color: AppColors.textSecondary,
                                                 fontSize: 12),
@@ -342,7 +341,7 @@ class _PosScreenState extends State<PosScreen> {
                             Text('Total',
                                 style: Theme.of(context).textTheme.titleMedium),
                             Text(
-                              _currencyFormat.format(cart.total),
+                              _currencyFormat.format(cart.total).replaceAll(' ', '\u00A0'),
                               style: const TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.w700,
@@ -461,7 +460,7 @@ class _ProductCard extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                currencyFormat.format(product.sellPrice),
+                currencyFormat.format(product.sellPrice).replaceAll(' ', '\u00A0'),
                 style: const TextStyle(
                   color: AppColors.gold,
                   fontWeight: FontWeight.w700,
