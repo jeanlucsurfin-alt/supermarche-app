@@ -9,6 +9,7 @@ import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/fafoutt_logo.dart';
 import 'categories_screen.dart';
+import 'employees_screen.dart';
 import 'products_screen.dart';
 import 'suppliers_screen.dart';
 
@@ -73,37 +74,78 @@ class _StockScreenState extends State<StockScreen> {
       appBar: AppBar(
         title: const FafouttHeader(subtitle: 'Gestion des stocks'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.edit_note_rounded),
-            tooltip: 'Gérer les produits',
-            onPressed: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ProductsScreen()),
-              );
-              _load();
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert_rounded),
+            tooltip: 'Gestion',
+            onSelected: (value) async {
+              Widget? screen;
+              switch (value) {
+                case 'produits':
+                  screen = const ProductsScreen();
+                  break;
+                case 'categories':
+                  screen = const CategoriesScreen();
+                  break;
+                case 'fournisseurs':
+                  screen = const SuppliersScreen();
+                  break;
+                case 'employes':
+                  screen = const EmployeesScreen();
+                  break;
+              }
+              if (screen != null) {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => screen!),
+                );
+                if (mounted) {
+                  _load();
+                  setState(() {});
+                }
+              }
             },
-          ),
-          IconButton(
-            icon: const Icon(Icons.category_outlined),
-            tooltip: 'Gérer les catégories',
-            onPressed: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const CategoriesScreen()),
-              );
-              if (mounted) setState(() {});
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.local_shipping_outlined),
-            tooltip: 'Fournisseurs',
-            onPressed: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SuppliersScreen()),
-              );
-            },
+            itemBuilder: (context) => const [
+              PopupMenuItem(
+                value: 'produits',
+                child: Row(
+                  children: [
+                    Icon(Icons.edit_note_rounded, size: 18),
+                    SizedBox(width: 10),
+                    Text('Produits'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'categories',
+                child: Row(
+                  children: [
+                    Icon(Icons.category_outlined, size: 18),
+                    SizedBox(width: 10),
+                    Text('Catégories'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'fournisseurs',
+                child: Row(
+                  children: [
+                    Icon(Icons.local_shipping_outlined, size: 18),
+                    SizedBox(width: 10),
+                    Text('Fournisseurs'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'employes',
+                child: Row(
+                  children: [
+                    Icon(Icons.badge_outlined, size: 18),
+                    SizedBox(width: 10),
+                    Text('Employés'),
+                  ],
+                ),
+              ),
+            ],
           ),
           const SizedBox(width: 4),
         ],

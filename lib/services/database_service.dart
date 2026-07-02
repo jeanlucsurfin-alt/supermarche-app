@@ -5,6 +5,8 @@ import '../models/sale.dart';
 import '../models/supplier.dart';
 import '../models/stock_movement.dart';
 import '../models/category.dart';
+import '../models/employee.dart';
+import '../models/employee_shift.dart';
 
 class DatabaseService {
   static final DatabaseService _instance = DatabaseService._internal();
@@ -22,7 +24,7 @@ class DatabaseService {
     final path = join(await getDatabasesPath(), 'fafoutt_store.db');
     return await openDatabase(
       path,
-      version: 4,
+      version: 5,
       onCreate: _onCreate,
       onUpgrade: (db, oldVersion, newVersion) async {
         await db.execute('DROP TABLE IF EXISTS sale_items');
@@ -32,6 +34,7 @@ class DatabaseService {
         await db.execute('DROP TABLE IF EXISTS suppliers');
         await db.execute('DROP TABLE IF EXISTS stock_movements');
         await db.execute('DROP TABLE IF EXISTS categories');
+        await db.execute('DROP TABLE IF EXISTS employee_shifts');
         await _onCreate(db, newVersion);
       },
     );
@@ -81,6 +84,16 @@ class DatabaseService {
         name TEXT NOT NULL,
         role TEXT NOT NULL,
         pin TEXT NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE employee_shifts(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        employeeId INTEGER NOT NULL,
+        employeeName TEXT NOT NULL,
+        clockIn TEXT NOT NULL,
+        clockOut TEXT
       )
     ''');
 
@@ -448,5 +461,74 @@ class DatabaseService {
   Future<void> deleteCategory(int id) async {
     final db = await database;
     await db.delete('categories', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // ---- EMPLOYÉS ----
+  Future<List<Employee>> getAllEmployees() async {
+    final db = await database;
+    final maps = await db.query('employees', orderBy: 'name');
+    return maps.map((m) => Employee.fromMap(m)).toList();
+  }
+
+  Future<int> insertEmployee(Employee employee) async {
+    final db = await database;
+    return await db.insert('employees', employee.toMap()..remove('id'));
+  }
+
+  Future<void> updateEmployee(Employee employee) async {
+    final db = await database;
+    await db.update('employees', employee.toMap(),
+        where: 'id = ?', whereArgs: [employee.id]);
+  }
+
+  Future<void> deleteEmployee(int id) async {
+    final db = await database;
+    await db.delete('employees', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // ---- POINTAGES (suivi des heures) ----
+  Future<EmployeeShift?> getActiveShift(int employeeId) async {
+    final db = await database;
+    final maps = await db.query(
+      'employee_shifts',
+      where: 'employeeId = ? AND clockOut IS NULL',
+      whereArgs: [employeeId],
+      orderBy: 'clockIn DESC',
+      limit: 1,
+    );
+    if (maps.isEmpty) return null;
+    return EmployeeShift.fromMap(maps.first);
+  }
+
+  Future<List<EmployeeShift>> getShiftsForEmployee(int employeeId) async {
+    final db = await database;
+    final maps = await db.query(
+      'employee_shifts',
+      where: 'employeeId = ?',
+      whereArgs: [employeeId],
+      orderBy: 'clockIn DESC',
+      limit: 30,
+    );
+    return maps.map((m) => EmployeeShift.fromMap(m)).toList();
+  }
+
+  Future<void> clockIn(int employeeId, String employeeName) async {
+    final db = await database;
+    await db.insert('employee_shifts', {
+      'employeeId': employeeId,
+      'employeeName': employeeName,
+      'clockIn': DateTime.now().toIso8601String(),
+      'clockOut': null,
+    });
+  }
+
+  Future<void> clockOut(int shiftId) async {
+    final db = await database;
+    await db.update(
+      'employee_shifts',
+      {'clockOut': DateTime.now().toIso8601String()},
+      where: 'id = ?',
+      whereArgs: [shiftId],
+    );
   }
 }
