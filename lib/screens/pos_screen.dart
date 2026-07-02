@@ -218,7 +218,7 @@ class _PosScreenState extends State<PosScreen> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: AppColors.gold.withValues(alpha: 0.15),
+                              color: AppColors.gold.withOpacity(0.15),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
@@ -396,7 +396,7 @@ class _ProductCard extends StatelessWidget {
                 width: 34,
                 height: 34,
                 decoration: BoxDecoration(
-                  color: AppColors.navy.withValues(alpha: 0.08),
+                  color: AppColors.navy.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 alignment: Alignment.center,
