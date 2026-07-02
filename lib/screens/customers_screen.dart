@@ -249,6 +249,7 @@ class _CustomerHistorySheet extends StatefulWidget {
 
 class _CustomerHistorySheetState extends State<_CustomerHistorySheet> {
   List<Map<String, dynamic>> _sales = [];
+  double _creditBalance = 0;
   bool _loading = true;
   final _dateFormat = DateFormat('dd/MM/yyyy HH:mm');
   final _currencyFormat =
@@ -262,8 +263,11 @@ class _CustomerHistorySheetState extends State<_CustomerHistorySheet> {
 
   Future<void> _load() async {
     final sales = await widget.db.getSalesForCustomer(widget.customer.id!);
+    final balance =
+        await widget.db.getOutstandingBalanceForCustomer(widget.customer.id!);
     setState(() {
       _sales = sales;
+      _creditBalance = balance;
       _loading = false;
     });
   }
@@ -307,7 +311,9 @@ class _CustomerHistorySheetState extends State<_CustomerHistorySheet> {
                             style:
                                 const TextStyle(color: AppColors.textSecondary)),
                         const SizedBox(height: 12),
-                        Row(
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
                           children: [
                             _StatChip(
                               icon: Icons.star_rounded,
@@ -315,13 +321,11 @@ class _CustomerHistorySheetState extends State<_CustomerHistorySheet> {
                                   '${widget.customer.loyaltyPoints} points',
                               color: AppColors.gold,
                             ),
-                            const SizedBox(width: 8),
                             _StatChip(
                               icon: Icons.receipt_long_rounded,
                               label: '${_sales.length} achats',
                               color: AppColors.blue,
                             ),
-                            const SizedBox(width: 8),
                             _StatChip(
                               icon: Icons.payments_rounded,
                               label: _currencyFormat
@@ -329,6 +333,12 @@ class _CustomerHistorySheetState extends State<_CustomerHistorySheet> {
                                   .replaceAll(' ', '\u00A0'),
                               color: AppColors.success,
                             ),
+                            if (_creditBalance > 0)
+                              _StatChip(
+                                icon: Icons.schedule_rounded,
+                                label: 'Doit ${_currencyFormat.format(_creditBalance).replaceAll(' ', '\u00A0')}',
+                                color: AppColors.danger,
+                              ),
                           ],
                         ),
                       ],

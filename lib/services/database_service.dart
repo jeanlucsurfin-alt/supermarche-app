@@ -8,6 +8,7 @@ import '../models/category.dart';
 import '../models/employee.dart';
 import '../models/employee_shift.dart';
 import '../models/customer.dart';
+import '../models/credit_payment.dart';
 
 class DatabaseService {
   static final DatabaseService _instance = DatabaseService._internal();
@@ -25,7 +26,7 @@ class DatabaseService {
     final path = join(await getDatabasesPath(), 'fafoutt_store.db');
     return await openDatabase(
       path,
-      version: 7,
+      version: 8,
       onCreate: _onCreate,
       onUpgrade: (db, oldVersion, newVersion) async {
         await db.execute('DROP TABLE IF EXISTS sale_items');
@@ -37,6 +38,7 @@ class DatabaseService {
         await db.execute('DROP TABLE IF EXISTS categories');
         await db.execute('DROP TABLE IF EXISTS employee_shifts');
         await db.execute('DROP TABLE IF EXISTS customers');
+        await db.execute('DROP TABLE IF EXISTS credit_payments');
         await _onCreate(db, newVersion);
       },
     );
@@ -78,6 +80,16 @@ class DatabaseService {
         name TEXT NOT NULL,
         phone TEXT NOT NULL,
         loyaltyPoints INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE credit_payments(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        customerId INTEGER NOT NULL,
+        amount REAL NOT NULL,
+        date TEXT NOT NULL,
+        note TEXT
       )
     ''');
 
@@ -436,7 +448,8 @@ class DatabaseService {
   }
 
   /// Résumé des ventes sur une période : chiffre d'affaires, bénéfice
-  /// estimé (basé sur les prix d'achat actuels), nombre de transactions.
+  /// réalisé (encaissé) vs en attente (crédit non remboursé), nombre
+  /// de transactions.
   Future<Map<String, double>> getSalesSummary(
       DateTime start, DateTime end) async {
     final db = await database;
@@ -447,26 +460,147 @@ class DatabaseService {
       WHERE date BETWEEN ? AND ?
     ''', [start.toIso8601String(), end.toIso8601String()]);
 
-    final costResult = await db.rawQuery('''
-      SELECT COALESCE(SUM(p.purchasePrice * si.quantity), 0) as cost
-      FROM sale_items si
-      JOIN sales s ON s.id = si.saleId
-      LEFT JOIN products p ON p.id = si.productId
-      WHERE s.date BETWEEN ? AND ?
-    ''', [start.toIso8601String(), end.toIso8601String()]);
-
     final transactionCount =
         (revenueResult.first['cnt'] as int?)?.toDouble() ?? 0;
     final revenue =
         (revenueResult.first['revenue'] as num?)?.toDouble() ?? 0;
-    final cost = (costResult.first['cost'] as num?)?.toDouble() ?? 0;
+
+    // Détail par vente pour calculer le coût et répartir le bénéfice
+    // entre "réalisé" (encaissé) et "en attente" (solde à crédit).
+    final saleRows = await db.rawQuery('''
+      SELECT s.id, s.total, s.amountPaid, s.paymentMethod,
+             COALESCE(SUM(p.purchasePrice * si.quantity), 0) as cost
+      FROM sales s
+      LEFT JOIN sale_items si ON si.saleId = s.id
+      LEFT JOIN products p ON p.id = si.productId
+      WHERE s.date BETWEEN ? AND ?
+      GROUP BY s.id
+    ''', [start.toIso8601String(), end.toIso8601String()]);
+
+    double realizedProfit = 0;
+    double pendingProfit = 0;
+    double pendingCreditAmount = 0;
+
+    for (final row in saleRows) {
+      final saleTotal = (row['total'] as num?)?.toDouble() ?? 0;
+      final amountPaid = (row['amountPaid'] as num?)?.toDouble() ?? 0;
+      final cost = (row['cost'] as num?)?.toDouble() ?? 0;
+      final profit = saleTotal - cost;
+      final method = row['paymentMethod'] as String?;
+
+      if (method == 'credit' && saleTotal > 0) {
+        final paidRatio = (amountPaid / saleTotal).clamp(0.0, 1.0);
+        realizedProfit += profit * paidRatio;
+        pendingProfit += profit * (1 - paidRatio);
+        pendingCreditAmount += (saleTotal - amountPaid);
+      } else {
+        realizedProfit += profit;
+      }
+    }
 
     return {
       'transactionCount': transactionCount,
       'revenue': revenue,
-      'profit': revenue - cost,
+      'profit': realizedProfit + pendingProfit,
+      'realizedProfit': realizedProfit,
+      'pendingProfit': pendingProfit,
+      'pendingCreditAmount': pendingCreditAmount,
       'averageBasket': transactionCount > 0 ? revenue / transactionCount : 0,
     };
+  }
+
+  /// Solde total actuellement dû (toutes périodes confondues), tous
+  /// clients confondus.
+  Future<double> getTotalOutstandingCredit() async {
+    final db = await database;
+    final result = await db.rawQuery('''
+      WITH credit_totals AS (
+        SELECT customerId, SUM(total - amountPaid) as owed
+        FROM sales
+        WHERE paymentMethod = 'credit' AND customerId IS NOT NULL
+        GROUP BY customerId
+      ),
+      repayments AS (
+        SELECT customerId, SUM(amount) as repaid
+        FROM credit_payments
+        GROUP BY customerId
+      )
+      SELECT COALESCE(SUM(
+        COALESCE(ct.owed, 0) - COALESCE(r.repaid, 0)
+      ), 0) as total
+      FROM credit_totals ct
+      LEFT JOIN repayments r ON r.customerId = ct.customerId
+    ''');
+    return (result.first['total'] as num?)?.toDouble() ?? 0;
+  }
+
+  /// Liste des clients ayant un solde à crédit non remboursé.
+  Future<List<Map<String, dynamic>>> getCustomersWithOutstandingBalance() async {
+    final db = await database;
+    return await db.rawQuery('''
+      WITH credit_totals AS (
+        SELECT customerId, SUM(total - amountPaid) as owed
+        FROM sales
+        WHERE paymentMethod = 'credit' AND customerId IS NOT NULL
+        GROUP BY customerId
+      ),
+      repayments AS (
+        SELECT customerId, SUM(amount) as repaid
+        FROM credit_payments
+        GROUP BY customerId
+      )
+      SELECT c.id, c.name, c.phone,
+             (COALESCE(ct.owed, 0) - COALESCE(r.repaid, 0)) as balance
+      FROM customers c
+      JOIN credit_totals ct ON ct.customerId = c.id
+      LEFT JOIN repayments r ON r.customerId = c.id
+      WHERE (COALESCE(ct.owed, 0) - COALESCE(r.repaid, 0)) > 0.01
+      ORDER BY balance DESC
+    ''');
+  }
+
+  /// Solde actuellement dû par un client précis.
+  Future<double> getOutstandingBalanceForCustomer(int customerId) async {
+    final db = await database;
+    final result = await db.rawQuery('''
+      SELECT
+        COALESCE((SELECT SUM(total - amountPaid) FROM sales
+                  WHERE paymentMethod = 'credit' AND customerId = ?), 0)
+        -
+        COALESCE((SELECT SUM(amount) FROM credit_payments
+                  WHERE customerId = ?), 0) as balance
+    ''', [customerId, customerId]);
+    final balance = (result.first['balance'] as num?)?.toDouble() ?? 0;
+    return balance < 0 ? 0 : balance;
+  }
+
+  Future<int> insertCreditPayment(CreditPayment payment) async {
+    final db = await database;
+    return await db.insert('credit_payments', payment.toMap()..remove('id'));
+  }
+
+  Future<List<CreditPayment>> getCreditPaymentsForCustomer(
+      int customerId) async {
+    final db = await database;
+    final maps = await db.query(
+      'credit_payments',
+      where: 'customerId = ?',
+      whereArgs: [customerId],
+      orderBy: 'date DESC',
+    );
+    return maps.map((m) => CreditPayment.fromMap(m)).toList();
+  }
+
+  /// Ventes à crédit (non entièrement payées) d'un client.
+  Future<List<Map<String, dynamic>>> getCreditSalesForCustomer(
+      int customerId) async {
+    final db = await database;
+    return await db.query(
+      'sales',
+      where: 'customerId = ? AND paymentMethod = ?',
+      whereArgs: [customerId, 'credit'],
+      orderBy: 'date DESC',
+    );
   }
 
   /// Produits les plus vendus sur une période.

@@ -9,6 +9,7 @@ import 'package:share_plus/share_plus.dart' show Share, XFile;
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/fafoutt_logo.dart';
+import 'credit_screen.dart';
 
 enum ReportPeriod { today, week, month, custom }
 
@@ -29,10 +30,14 @@ class _ReportsScreenState extends State<ReportsScreen> {
     'transactionCount': 0,
     'revenue': 0,
     'profit': 0,
+    'realizedProfit': 0,
+    'pendingProfit': 0,
+    'pendingCreditAmount': 0,
     'averageBasket': 0,
   };
   List<Map<String, dynamic>> _topProducts = [];
   List<Map<String, dynamic>> _byPaymentMethod = [];
+  double _totalOutstandingCredit = 0;
   bool _loading = true;
 
   final _currencyFormat =
@@ -68,10 +73,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
     final summary = await _db.getSalesSummary(start, end);
     final topProducts = await _db.getTopProducts(start, end);
     final byPayment = await _db.getSalesByPaymentMethod(start, end);
+    final outstanding = await _db.getTotalOutstandingCredit();
     setState(() {
       _summary = summary;
       _topProducts = topProducts;
       _byPaymentMethod = byPayment;
+      _totalOutstandingCredit = outstanding;
       _loading = false;
     });
   }
@@ -123,7 +130,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 'Période : ${_dateFormat.format(start)} au ${_dateFormat.format(end)}'),
             pw.SizedBox(height: 16),
             pw.Text('Chiffre d\'affaires : ${_currencyFormat.format(_summary['revenue'])}'),
-            pw.Text('Bénéfice estimé : ${_currencyFormat.format(_summary['profit'])}'),
+            pw.Text('Bénéfice réalisé : ${_currencyFormat.format(_summary['realizedProfit'])}'),
+            pw.Text('Bénéfice en attente (crédit) : ${_currencyFormat.format(_summary['pendingProfit'])}'),
+            pw.Text('Total des créances en cours : ${_currencyFormat.format(_totalOutstandingCredit)}'),
             pw.Text('Nombre de ventes : ${_summary['transactionCount']!.toInt()}'),
             pw.Text('Panier moyen : ${_currencyFormat.format(_summary['averageBasket'])}'),
             pw.SizedBox(height: 16),
@@ -258,6 +267,60 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 child: Center(child: CircularProgressIndicator()),
               )
             else ...[
+              InkWell(
+                onTap: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const CreditScreen()),
+                  );
+                  _load();
+                },
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppColors.danger.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: AppColors.danger.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        alignment: Alignment.center,
+                        child: const Icon(Icons.schedule_rounded,
+                            color: AppColors.danger, size: 18),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Total des créances en cours',
+                                style: TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 11)),
+                            Text(
+                              _currencyFormat.format(_totalOutstandingCredit),
+                              style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.danger),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right_rounded,
+                          color: AppColors.danger, size: 20),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
               GridView.count(
                 crossAxisCount: 2,
                 shrinkWrap: true,
@@ -273,22 +336,35 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     color: AppColors.navy,
                   ),
                   _StatCard(
-                    icon: Icons.trending_up_rounded,
-                    label: 'Bénéfice estimé',
-                    value: _currencyFormat.format(_summary['profit']),
-                    color: AppColors.success,
-                  ),
-                  _StatCard(
                     icon: Icons.receipt_long_rounded,
                     label: 'Nombre de ventes',
                     value: '${_summary['transactionCount']!.toInt()}',
                     color: AppColors.blue,
                   ),
                   _StatCard(
+                    icon: Icons.trending_up_rounded,
+                    label: 'Bénéfice réalisé',
+                    value: _currencyFormat.format(_summary['realizedProfit']),
+                    color: AppColors.success,
+                  ),
+                  _StatCard(
+                    icon: Icons.hourglass_bottom_rounded,
+                    label: 'Bénéfice en attente (crédit)',
+                    value: _currencyFormat.format(_summary['pendingProfit']),
+                    color: AppColors.danger,
+                  ),
+                  _StatCard(
                     icon: Icons.shopping_basket_rounded,
                     label: 'Panier moyen',
                     value: _currencyFormat.format(_summary['averageBasket']),
                     color: AppColors.gold,
+                  ),
+                  _StatCard(
+                    icon: Icons.credit_score_rounded,
+                    label: 'Crédit accordé (période)',
+                    value:
+                        _currencyFormat.format(_summary['pendingCreditAmount']),
+                    color: AppColors.danger,
                   ),
                 ],
               ),
