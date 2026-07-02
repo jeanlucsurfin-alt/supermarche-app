@@ -9,6 +9,7 @@ import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/fafoutt_logo.dart';
 import 'categories_screen.dart';
+import 'products_screen.dart';
 import 'suppliers_screen.dart';
 
 class StockScreen extends StatefulWidget {
@@ -72,6 +73,17 @@ class _StockScreenState extends State<StockScreen> {
       appBar: AppBar(
         title: const FafouttHeader(subtitle: 'Gestion des stocks'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_note_rounded),
+            tooltip: 'Gérer les produits',
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ProductsScreen()),
+              );
+              _load();
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.category_outlined),
             tooltip: 'Gérer les catégories',
