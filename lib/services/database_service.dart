@@ -16,11 +16,18 @@ class DatabaseService {
   }
 
   Future<Database> _initDatabase() async {
-    final path = join(await getDatabasesPath(), 'supermarche.db');
+    final path = join(await getDatabasesPath(), 'fafoutt_store.db');
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _onCreate,
+      onUpgrade: (db, oldVersion, newVersion) async {
+        await db.execute('DROP TABLE IF EXISTS sale_items');
+        await db.execute('DROP TABLE IF EXISTS sales');
+        await db.execute('DROP TABLE IF EXISTS products');
+        await db.execute('DROP TABLE IF EXISTS employees');
+        await _onCreate(db, newVersion);
+      },
     );
   }
 
@@ -89,6 +96,104 @@ class DatabaseService {
       'sellPrice': 250.0,
       'stockQuantity': 30,
       'lowStockThreshold': 8,
+    });
+    await db.insert('products', {
+      'name': 'Farine 2lb',
+      'barcode': '7501234567892',
+      'category': 'Épicerie',
+      'purchasePrice': 90.0,
+      'sellPrice': 130.0,
+      'stockQuantity': 40,
+      'lowStockThreshold': 10,
+    });
+
+    // Cosmétique
+    await db.insert('products', {
+      'name': 'Savon corporel',
+      'barcode': '7501234567893',
+      'category': 'Cosmétique',
+      'purchasePrice': 80.0,
+      'sellPrice': 120.0,
+      'stockQuantity': 25,
+      'lowStockThreshold': 6,
+    });
+    await db.insert('products', {
+      'name': 'Lotion hydratante',
+      'barcode': '7501234567894',
+      'category': 'Cosmétique',
+      'purchasePrice': 250.0,
+      'sellPrice': 350.0,
+      'stockQuantity': 15,
+      'lowStockThreshold': 5,
+    });
+    await db.insert('products', {
+      'name': 'Parfum femme 50ml',
+      'barcode': '7501234567895',
+      'category': 'Cosmétique',
+      'purchasePrice': 800.0,
+      'sellPrice': 1200.0,
+      'stockQuantity': 8,
+      'lowStockThreshold': 3,
+    });
+
+    // Vêtements
+    await db.insert('products', {
+      'name': 'T-shirt uni',
+      'barcode': '7501234567896',
+      'category': 'Vêtements',
+      'purchasePrice': 300.0,
+      'sellPrice': 500.0,
+      'stockQuantity': 20,
+      'lowStockThreshold': 5,
+    });
+    await db.insert('products', {
+      'name': 'Jean homme',
+      'barcode': '7501234567897',
+      'category': 'Vêtements',
+      'purchasePrice': 900.0,
+      'sellPrice': 1400.0,
+      'stockQuantity': 12,
+      'lowStockThreshold': 4,
+    });
+
+    // Électronique
+    await db.insert('products', {
+      'name': 'Chargeur USB-C',
+      'barcode': '7501234567898',
+      'category': 'Électronique',
+      'purchasePrice': 350.0,
+      'sellPrice': 550.0,
+      'stockQuantity': 18,
+      'lowStockThreshold': 5,
+    });
+    await db.insert('products', {
+      'name': 'Écouteurs filaires',
+      'barcode': '7501234567899',
+      'category': 'Électronique',
+      'purchasePrice': 450.0,
+      'sellPrice': 700.0,
+      'stockQuantity': 10,
+      'lowStockThreshold': 4,
+    });
+
+    // Home Decor
+    await db.insert('products', {
+      'name': 'Bougie parfumée',
+      'barcode': '7501234567900',
+      'category': 'Home Decor',
+      'purchasePrice': 150.0,
+      'sellPrice': 250.0,
+      'stockQuantity': 22,
+      'lowStockThreshold': 6,
+    });
+    await db.insert('products', {
+      'name': 'Cadre photo',
+      'barcode': '7501234567901',
+      'category': 'Home Decor',
+      'purchasePrice': 200.0,
+      'sellPrice': 320.0,
+      'stockQuantity': 14,
+      'lowStockThreshold': 5,
     });
   }
 
