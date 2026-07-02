@@ -25,7 +25,7 @@ class DatabaseService {
     final path = join(await getDatabasesPath(), 'fafoutt_store.db');
     return await openDatabase(
       path,
-      version: 6,
+      version: 7,
       onCreate: _onCreate,
       onUpgrade: (db, oldVersion, newVersion) async {
         await db.execute('DROP TABLE IF EXISTS sale_items');
@@ -51,6 +51,8 @@ class DatabaseService {
         category TEXT,
         purchasePrice REAL NOT NULL,
         sellPrice REAL NOT NULL,
+        purchasePriceUSD REAL NOT NULL DEFAULT 0,
+        sellPriceUSD REAL NOT NULL DEFAULT 0,
         stockQuantity INTEGER NOT NULL,
         lowStockThreshold INTEGER DEFAULT 5,
         expiryDate TEXT
@@ -65,7 +67,8 @@ class DatabaseService {
         amountPaid REAL NOT NULL,
         total REAL NOT NULL,
         cashierName TEXT,
-        customerId INTEGER
+        customerId INTEGER,
+        currency TEXT NOT NULL DEFAULT 'HTG'
       )
     ''');
 
@@ -174,6 +177,8 @@ class DatabaseService {
       'category': 'Épicerie',
       'purchasePrice': 150.0,
       'sellPrice': 200.0,
+      'purchasePriceUSD': 1.15,
+      'sellPriceUSD': 1.54,
       'stockQuantity': 50,
       'lowStockThreshold': 10,
     });
@@ -183,6 +188,8 @@ class DatabaseService {
       'category': 'Épicerie',
       'purchasePrice': 180.0,
       'sellPrice': 250.0,
+      'purchasePriceUSD': 1.38,
+      'sellPriceUSD': 1.92,
       'stockQuantity': 30,
       'lowStockThreshold': 8,
     });
@@ -192,6 +199,8 @@ class DatabaseService {
       'category': 'Épicerie',
       'purchasePrice': 90.0,
       'sellPrice': 130.0,
+      'purchasePriceUSD': 0.69,
+      'sellPriceUSD': 1.0,
       'stockQuantity': 40,
       'lowStockThreshold': 10,
     });
@@ -203,6 +212,8 @@ class DatabaseService {
       'category': 'Cosmétique',
       'purchasePrice': 80.0,
       'sellPrice': 120.0,
+      'purchasePriceUSD': 0.62,
+      'sellPriceUSD': 0.92,
       'stockQuantity': 25,
       'lowStockThreshold': 6,
     });
@@ -212,6 +223,8 @@ class DatabaseService {
       'category': 'Cosmétique',
       'purchasePrice': 250.0,
       'sellPrice': 350.0,
+      'purchasePriceUSD': 1.92,
+      'sellPriceUSD': 2.69,
       'stockQuantity': 15,
       'lowStockThreshold': 5,
     });
@@ -221,6 +234,8 @@ class DatabaseService {
       'category': 'Cosmétique',
       'purchasePrice': 800.0,
       'sellPrice': 1200.0,
+      'purchasePriceUSD': 6.15,
+      'sellPriceUSD': 9.23,
       'stockQuantity': 8,
       'lowStockThreshold': 3,
     });
@@ -232,6 +247,8 @@ class DatabaseService {
       'category': 'Vêtements',
       'purchasePrice': 300.0,
       'sellPrice': 500.0,
+      'purchasePriceUSD': 2.31,
+      'sellPriceUSD': 3.85,
       'stockQuantity': 20,
       'lowStockThreshold': 5,
     });
@@ -241,6 +258,8 @@ class DatabaseService {
       'category': 'Vêtements',
       'purchasePrice': 900.0,
       'sellPrice': 1400.0,
+      'purchasePriceUSD': 6.92,
+      'sellPriceUSD': 10.77,
       'stockQuantity': 12,
       'lowStockThreshold': 4,
     });
@@ -252,6 +271,8 @@ class DatabaseService {
       'category': 'Électronique',
       'purchasePrice': 350.0,
       'sellPrice': 550.0,
+      'purchasePriceUSD': 2.69,
+      'sellPriceUSD': 4.23,
       'stockQuantity': 18,
       'lowStockThreshold': 5,
     });
@@ -261,6 +282,8 @@ class DatabaseService {
       'category': 'Électronique',
       'purchasePrice': 450.0,
       'sellPrice': 700.0,
+      'purchasePriceUSD': 3.46,
+      'sellPriceUSD': 5.38,
       'stockQuantity': 10,
       'lowStockThreshold': 4,
     });
@@ -272,6 +295,8 @@ class DatabaseService {
       'category': 'Home Decor',
       'purchasePrice': 150.0,
       'sellPrice': 250.0,
+      'purchasePriceUSD': 1.15,
+      'sellPriceUSD': 1.92,
       'stockQuantity': 22,
       'lowStockThreshold': 6,
     });
@@ -281,6 +306,8 @@ class DatabaseService {
       'category': 'Home Decor',
       'purchasePrice': 200.0,
       'sellPrice': 320.0,
+      'purchasePriceUSD': 1.54,
+      'sellPriceUSD': 2.46,
       'stockQuantity': 14,
       'lowStockThreshold': 5,
     });

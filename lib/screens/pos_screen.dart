@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import '../models/product.dart';
 import '../providers/cart_provider.dart';
 import '../providers/category_provider.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/currency.dart';
 import '../widgets/fafoutt_logo.dart';
 import 'barcode_scanner_screen.dart';
 import 'categories_screen.dart';
@@ -24,8 +24,6 @@ class _PosScreenState extends State<PosScreen> {
   List<Product> _filteredProducts = [];
   String _selectedCategory = 'Tout';
   final TextEditingController _searchController = TextEditingController();
-  final _currencyFormat =
-      NumberFormat.currency(locale: 'fr', symbol: 'HTG ', decimalDigits: 0);
 
   @override
   void initState() {
@@ -86,10 +84,41 @@ class _PosScreenState extends State<PosScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cart = context.watch<CartProvider>();
     return Scaffold(
       appBar: AppBar(
         title: const FafouttHeader(subtitle: 'Point de Vente'),
         actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: () {
+                final next = cart.currency == 'HTG' ? 'USD' : 'HTG';
+                context.read<CartProvider>().switchCurrency(next, _products);
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.currency_exchange_rounded,
+                        size: 14, color: Colors.white),
+                    const SizedBox(width: 5),
+                    Text(cart.currency,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12)),
+                  ],
+                ),
+              ),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.category_outlined),
             tooltip: 'Gérer les catégories',
@@ -204,7 +233,7 @@ class _PosScreenState extends State<PosScreen> {
                               final product = _filteredProducts[index];
                               return _ProductCard(
                                 product: product,
-                                currencyFormat: _currencyFormat,
+                                currency: cart.currency,
                                 onTap: () => context
                                     .read<CartProvider>()
                                     .addProduct(product),
@@ -230,7 +259,7 @@ class _PosScreenState extends State<PosScreen> {
                           Border(left: BorderSide(color: Color(0xFFEBEDF2))),
                     ),
                     child: _CartPanel(
-                      currencyFormat: _currencyFormat,
+                      currency: cart.currency,
                       products: _products,
                       onCheckoutDone: _loadProducts,
                     ),
@@ -247,7 +276,7 @@ class _PosScreenState extends State<PosScreen> {
               Align(
                 alignment: Alignment.bottomCenter,
                 child: _CartSummaryBar(
-                  currencyFormat: _currencyFormat,
+                  currency: cart.currency,
                   products: _products,
                   onCheckoutDone: _loadProducts,
                 ),
@@ -263,12 +292,12 @@ class _PosScreenState extends State<PosScreen> {
 /// Barre compacte en bas d'écran (téléphone) : ouvre le panier complet
 /// en plein écran au tap.
 class _CartSummaryBar extends StatelessWidget {
-  final NumberFormat currencyFormat;
+  final String currency;
   final List<Product> products;
   final VoidCallback onCheckoutDone;
 
   const _CartSummaryBar({
-    required this.currencyFormat,
+    required this.currency,
     required this.products,
     required this.onCheckoutDone,
   });
@@ -316,7 +345,7 @@ class _CartSummaryBar extends StatelessWidget {
                         ),
                         Expanded(
                           child: _CartPanel(
-                            currencyFormat: currencyFormat,
+                            currency: currency,
                             products: products,
                             onCheckoutDone: onCheckoutDone,
                             scrollController: scrollController,
@@ -355,7 +384,7 @@ class _CartSummaryBar extends StatelessWidget {
                           fontSize: 14)),
                   const Spacer(),
                   Text(
-                    currencyFormat.format(cart.total).replaceAll(' ', '\u00A0'),
+                    formatPrice(cart.total, currency),
                     style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,
@@ -377,14 +406,14 @@ class _CartSummaryBar extends StatelessWidget {
 /// Contenu du panier, réutilisé en panneau latéral (tablette)
 /// ou en tiroir plein écran (téléphone).
 class _CartPanel extends StatelessWidget {
-  final NumberFormat currencyFormat;
+  final String currency;
   final List<Product> products;
   final VoidCallback onCheckoutDone;
   final ScrollController? scrollController;
   final bool closeOnCheckout;
 
   const _CartPanel({
-    required this.currencyFormat,
+    required this.currency,
     required this.products,
     required this.onCheckoutDone,
     this.scrollController,
@@ -493,9 +522,7 @@ class _CartPanel extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                currencyFormat
-                                    .format(item.unitPrice)
-                                    .replaceAll(' ', '\u00A0'),
+                                formatPrice(item.unitPrice, currency),
                                 style: const TextStyle(
                                     color: AppColors.textSecondary,
                                     fontSize: 12),
@@ -549,7 +576,7 @@ class _CartPanel extends StatelessWidget {
                 children: [
                   Text('Total', style: Theme.of(context).textTheme.titleMedium),
                   Text(
-                    currencyFormat.format(cart.total).replaceAll(' ', '\u00A0'),
+                    formatPrice(cart.total, currency),
                     style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
@@ -588,12 +615,12 @@ class _CartPanel extends StatelessWidget {
 
 class _ProductCard extends StatelessWidget {
   final Product product;
-  final NumberFormat currencyFormat;
+  final String currency;
   final VoidCallback onTap;
 
   const _ProductCard({
     required this.product,
-    required this.currencyFormat,
+    required this.currency,
     required this.onTap,
   });
 
@@ -634,7 +661,7 @@ class _ProductCard extends StatelessWidget {
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  currencyFormat.format(product.sellPrice),
+                  formatPrice(product.priceFor(currency), currency),
                   maxLines: 1,
                   style: const TextStyle(
                     color: AppColors.gold,

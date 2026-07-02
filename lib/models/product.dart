@@ -5,6 +5,8 @@ class Product {
   final String category;
   final double purchasePrice;
   final double sellPrice;
+  final double purchasePriceUSD;
+  final double sellPriceUSD;
   final int stockQuantity;
   final int lowStockThreshold;
   final DateTime? expiryDate;
@@ -16,13 +18,19 @@ class Product {
     required this.category,
     required this.purchasePrice,
     required this.sellPrice,
+    this.purchasePriceUSD = 0,
+    this.sellPriceUSD = 0,
     required this.stockQuantity,
     this.lowStockThreshold = 5,
     this.expiryDate,
   });
 
   double get margin => sellPrice - purchasePrice;
+  double get marginUSD => sellPriceUSD - purchasePriceUSD;
   bool get isLowStock => stockQuantity <= lowStockThreshold;
+
+  double priceFor(String currency) =>
+      currency == 'USD' ? sellPriceUSD : sellPrice;
 
   Map<String, dynamic> toMap() {
     return {
@@ -32,6 +40,8 @@ class Product {
       'category': category,
       'purchasePrice': purchasePrice,
       'sellPrice': sellPrice,
+      'purchasePriceUSD': purchasePriceUSD,
+      'sellPriceUSD': sellPriceUSD,
       'stockQuantity': stockQuantity,
       'lowStockThreshold': lowStockThreshold,
       'expiryDate': expiryDate?.toIso8601String(),
@@ -46,6 +56,8 @@ class Product {
       category: map['category'],
       purchasePrice: map['purchasePrice'],
       sellPrice: map['sellPrice'],
+      purchasePriceUSD: (map['purchasePriceUSD'] ?? 0).toDouble(),
+      sellPriceUSD: (map['sellPriceUSD'] ?? 0).toDouble(),
       stockQuantity: map['stockQuantity'],
       lowStockThreshold: map['lowStockThreshold'] ?? 5,
       expiryDate: map['expiryDate'] != null
@@ -62,6 +74,8 @@ class Product {
       category: category,
       purchasePrice: purchasePrice,
       sellPrice: sellPrice,
+      purchasePriceUSD: purchasePriceUSD,
+      sellPriceUSD: sellPriceUSD,
       stockQuantity: stockQuantity ?? this.stockQuantity,
       lowStockThreshold: lowStockThreshold,
       expiryDate: expiryDate,

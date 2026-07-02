@@ -144,7 +144,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
                               style:
                                   const TextStyle(fontWeight: FontWeight.w600)),
                           subtitle: Text(
-                            '${product.category} · ${_currencyFormat.format(product.sellPrice)}',
+                            '${product.category} · ${_currencyFormat.format(product.sellPrice)}'
+                            '${product.sellPriceUSD > 0 ? ' · \$${product.sellPriceUSD.toStringAsFixed(2)}' : ''}',
                             style: const TextStyle(fontSize: 12),
                           ),
                           trailing: IconButton(
@@ -189,6 +190,8 @@ class _ProductEditSheetState extends State<_ProductEditSheet> {
   late final TextEditingController _barcodeController;
   late final TextEditingController _purchasePriceController;
   late final TextEditingController _sellPriceController;
+  late final TextEditingController _purchasePriceUSDController;
+  late final TextEditingController _sellPriceUSDController;
   late final TextEditingController _stockController;
   late final TextEditingController _thresholdController;
   String? _selectedCategory;
@@ -207,6 +210,14 @@ class _ProductEditSheetState extends State<_ProductEditSheet> {
         TextEditingController(text: p != null ? p.purchasePrice.toStringAsFixed(0) : '');
     _sellPriceController =
         TextEditingController(text: p != null ? p.sellPrice.toStringAsFixed(0) : '');
+    _purchasePriceUSDController = TextEditingController(
+        text: p != null && p.purchasePriceUSD > 0
+            ? p.purchasePriceUSD.toStringAsFixed(2)
+            : '');
+    _sellPriceUSDController = TextEditingController(
+        text: p != null && p.sellPriceUSD > 0
+            ? p.sellPriceUSD.toStringAsFixed(2)
+            : '');
     _stockController =
         TextEditingController(text: p != null ? '${p.stockQuantity}' : '0');
     _thresholdController =
@@ -238,6 +249,9 @@ class _ProductEditSheetState extends State<_ProductEditSheet> {
     }
     final purchasePrice = double.tryParse(_purchasePriceController.text) ?? 0;
     final sellPrice = double.tryParse(_sellPriceController.text) ?? 0;
+    final purchasePriceUSD =
+        double.tryParse(_purchasePriceUSDController.text) ?? 0;
+    final sellPriceUSD = double.tryParse(_sellPriceUSDController.text) ?? 0;
     final stock = int.tryParse(_stockController.text) ?? 0;
     final threshold = int.tryParse(_thresholdController.text) ?? 5;
 
@@ -255,6 +269,8 @@ class _ProductEditSheetState extends State<_ProductEditSheet> {
       category: _selectedCategory!,
       purchasePrice: purchasePrice,
       sellPrice: sellPrice,
+      purchasePriceUSD: purchasePriceUSD,
+      sellPriceUSD: sellPriceUSD,
       stockQuantity: stock,
       lowStockThreshold: threshold,
       expiryDate: _expiryDate,
@@ -335,8 +351,8 @@ class _ProductEditSheetState extends State<_ProductEditSheet> {
                   Expanded(
                     child: TextField(
                       controller: _purchasePriceController,
-                      decoration:
-                          const InputDecoration(labelText: 'Prix d\'achat'),
+                      decoration: const InputDecoration(
+                          labelText: 'Prix d\'achat (HTG)'),
                       keyboardType: TextInputType.number,
                     ),
                   ),
@@ -344,9 +360,33 @@ class _ProductEditSheetState extends State<_ProductEditSheet> {
                   Expanded(
                     child: TextField(
                       controller: _sellPriceController,
-                      decoration:
-                          const InputDecoration(labelText: 'Prix de vente'),
+                      decoration: const InputDecoration(
+                          labelText: 'Prix de vente (HTG)'),
                       keyboardType: TextInputType.number,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _purchasePriceUSDController,
+                      decoration: const InputDecoration(
+                          labelText: 'Prix d\'achat (USD, optionnel)'),
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      controller: _sellPriceUSDController,
+                      decoration: const InputDecoration(
+                          labelText: 'Prix de vente (USD, optionnel)'),
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
                     ),
                   ),
                 ],

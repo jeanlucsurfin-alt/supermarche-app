@@ -34,6 +34,7 @@ class Sale {
   final double amountPaid;
   final String? cashierName;
   final int? customerId;
+  final String currency;
 
   Sale({
     this.id,
@@ -43,6 +44,7 @@ class Sale {
     required this.amountPaid,
     this.cashierName,
     this.customerId,
+    this.currency = 'HTG',
   });
 
   double get total => items.fold(0, (sum, item) => sum + item.total);
@@ -57,6 +59,7 @@ class Sale {
       'total': total,
       'cashierName': cashierName,
       'customerId': customerId,
+      'currency': currency,
     };
   }
 }
