@@ -33,6 +33,7 @@ class Sale {
   final PaymentMethod paymentMethod;
   final double amountPaid;
   final String? cashierName;
+  final int? customerId;
 
   Sale({
     this.id,
@@ -41,6 +42,7 @@ class Sale {
     required this.paymentMethod,
     required this.amountPaid,
     this.cashierName,
+    this.customerId,
   });
 
   double get total => items.fold(0, (sum, item) => sum + item.total);
@@ -54,6 +56,7 @@ class Sale {
       'amountPaid': amountPaid,
       'total': total,
       'cashierName': cashierName,
+      'customerId': customerId,
     };
   }
 }

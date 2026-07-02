@@ -9,6 +9,7 @@ import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/fafoutt_logo.dart';
 import 'categories_screen.dart';
+import 'customers_screen.dart';
 import 'employees_screen.dart';
 import 'products_screen.dart';
 import 'suppliers_screen.dart';
@@ -92,6 +93,9 @@ class _StockScreenState extends State<StockScreen> {
                 case 'employes':
                   screen = const EmployeesScreen();
                   break;
+                case 'clients':
+                  screen = const CustomersScreen();
+                  break;
               }
               if (screen != null) {
                 await Navigator.push(
@@ -142,6 +146,16 @@ class _StockScreenState extends State<StockScreen> {
                     Icon(Icons.badge_outlined, size: 18),
                     SizedBox(width: 10),
                     Text('Employés'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'clients',
+                child: Row(
+                  children: [
+                    Icon(Icons.people_outline_rounded, size: 18),
+                    SizedBox(width: 10),
+                    Text('Clients'),
                   ],
                 ),
               ),

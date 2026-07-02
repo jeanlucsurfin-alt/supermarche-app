@@ -7,6 +7,7 @@ import 'package:printing/printing.dart';
 import '../providers/cart_provider.dart';
 import '../services/database_service.dart';
 import '../models/sale.dart';
+import '../models/customer.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -21,6 +22,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _currencyFormat = NumberFormat.currency(locale: 'fr', symbol: 'HTG ', decimalDigits: 0);
   final DatabaseService _db = DatabaseService();
   bool _isProcessing = false;
+  List<Customer> _customers = [];
+  int? _selectedCustomerId;
+
+  @override
+  void initState() {
+    super.initState();
+    _db.getAllCustomers().then((c) => setState(() => _customers = c));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,8 +41,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       appBar: AppBar(title: const Text('Paiement')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: ListView(
           children: [
             Card(
               child: Padding(
@@ -50,6 +58,30 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               ),
             ),
             const SizedBox(height: 20),
+            if (_customers.isNotEmpty) ...[
+              const Text('Client (optionnel)',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<int?>(
+                value: _selectedCustomerId,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  hintText: 'Aucun client sélectionné',
+                ),
+                items: [
+                  const DropdownMenuItem<int?>(
+                    value: null,
+                    child: Text('Aucun client'),
+                  ),
+                  ..._customers.map((c) => DropdownMenuItem<int?>(
+                        value: c.id,
+                        child: Text('${c.name} (${c.loyaltyPoints} pts)'),
+                      )),
+                ],
+                onChanged: (v) => setState(() => _selectedCustomerId = v),
+              ),
+              const SizedBox(height: 20),
+            ],
             const Text('Mode de paiement', style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             SegmentedButton<PaymentMethod>(
@@ -83,7 +115,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   color: change >= 0 ? Colors.green : Colors.red,
                 ),
               ),
-            const Spacer(),
+            const SizedBox(height: 24),
             SizedBox(
               height: 56,
               child: ElevatedButton(
@@ -109,6 +141,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       items: cart.items,
       paymentMethod: _selectedMethod,
       amountPaid: double.parse(_amountController.text),
+      customerId: _selectedCustomerId,
     );
 
     await _db.insertSale(sale);

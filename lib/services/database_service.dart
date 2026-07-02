@@ -7,6 +7,7 @@ import '../models/stock_movement.dart';
 import '../models/category.dart';
 import '../models/employee.dart';
 import '../models/employee_shift.dart';
+import '../models/customer.dart';
 
 class DatabaseService {
   static final DatabaseService _instance = DatabaseService._internal();
@@ -24,7 +25,7 @@ class DatabaseService {
     final path = join(await getDatabasesPath(), 'fafoutt_store.db');
     return await openDatabase(
       path,
-      version: 5,
+      version: 6,
       onCreate: _onCreate,
       onUpgrade: (db, oldVersion, newVersion) async {
         await db.execute('DROP TABLE IF EXISTS sale_items');
@@ -35,6 +36,7 @@ class DatabaseService {
         await db.execute('DROP TABLE IF EXISTS stock_movements');
         await db.execute('DROP TABLE IF EXISTS categories');
         await db.execute('DROP TABLE IF EXISTS employee_shifts');
+        await db.execute('DROP TABLE IF EXISTS customers');
         await _onCreate(db, newVersion);
       },
     );
@@ -62,7 +64,17 @@ class DatabaseService {
         paymentMethod TEXT NOT NULL,
         amountPaid REAL NOT NULL,
         total REAL NOT NULL,
-        cashierName TEXT
+        cashierName TEXT,
+        customerId INTEGER
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE customers(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        loyaltyPoints INTEGER NOT NULL DEFAULT 0
       )
     ''');
 
@@ -358,6 +370,29 @@ class DatabaseService {
           );
         }
       }
+
+      // Attribution de points de fidélité : 1 point par 100 HTG dépensés.
+      if (sale.customerId != null) {
+        final earnedPoints = (sale.total / 100).floor();
+        if (earnedPoints > 0) {
+          final customerRows = await txn.query(
+            'customers',
+            where: 'id = ?',
+            whereArgs: [sale.customerId],
+          );
+          if (customerRows.isNotEmpty) {
+            final currentPoints =
+                customerRows.first['loyaltyPoints'] as int;
+            await txn.update(
+              'customers',
+              {'loyaltyPoints': currentPoints + earnedPoints},
+              where: 'id = ?',
+              whereArgs: [sale.customerId],
+            );
+          }
+        }
+      }
+
       return saleId;
     });
   }
@@ -529,6 +564,41 @@ class DatabaseService {
       {'clockOut': DateTime.now().toIso8601String()},
       where: 'id = ?',
       whereArgs: [shiftId],
+    );
+  }
+
+  // ---- CLIENTS ----
+  Future<List<Customer>> getAllCustomers() async {
+    final db = await database;
+    final maps = await db.query('customers', orderBy: 'name');
+    return maps.map((m) => Customer.fromMap(m)).toList();
+  }
+
+  Future<int> insertCustomer(Customer customer) async {
+    final db = await database;
+    return await db.insert('customers', customer.toMap()..remove('id'));
+  }
+
+  Future<void> updateCustomer(Customer customer) async {
+    final db = await database;
+    await db.update('customers', customer.toMap(),
+        where: 'id = ?', whereArgs: [customer.id]);
+  }
+
+  Future<void> deleteCustomer(int id) async {
+    final db = await database;
+    await db.delete('customers', where: 'id = ?', whereArgs: [id]);
+  }
+
+  /// Historique des ventes liées à un client, du plus récent au plus ancien.
+  Future<List<Map<String, dynamic>>> getSalesForCustomer(
+      int customerId) async {
+    final db = await database;
+    return await db.query(
+      'sales',
+      where: 'customerId = ?',
+      whereArgs: [customerId],
+      orderBy: 'date DESC',
     );
   }
 }
