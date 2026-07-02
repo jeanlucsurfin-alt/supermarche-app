@@ -24,7 +24,7 @@ class SaleItem {
   }
 }
 
-enum PaymentMethod { cash, card, mobileMoney }
+enum PaymentMethod { cash, card, mobileMoney, credit }
 
 class Sale {
   final int? id;

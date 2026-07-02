@@ -84,6 +84,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
         return 'Carte';
       case 'mobileMoney':
         return 'Mobile Money';
+      case 'credit':
+        return 'Crédit';
       default:
         return method;
     }

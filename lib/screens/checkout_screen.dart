@@ -9,6 +9,7 @@ import '../services/database_service.dart';
 import '../models/sale.dart';
 import '../models/customer.dart';
 import '../utils/currency.dart';
+import '../theme/app_theme.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -35,8 +36,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Widget build(BuildContext context) {
     final cart = context.watch<CartProvider>();
     final currency = cart.currency;
+    final isCredit = _selectedMethod == PaymentMethod.credit;
     final amountPaid = double.tryParse(_amountController.text) ?? 0;
     final change = amountPaid - cart.total;
+    final creditBalance = cart.total - amountPaid;
+
+    final canConfirm = !_isProcessing &&
+        (isCredit
+            ? _selectedCustomerId != null && amountPaid <= cart.total
+            : amountPaid >= cart.total);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Paiement')),
@@ -76,30 +84,31 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            if (_customers.isNotEmpty) ...[
-              const Text('Client (optionnel)',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<int?>(
-                value: _selectedCustomerId,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  hintText: 'Aucun client sélectionné',
-                ),
-                items: [
-                  const DropdownMenuItem<int?>(
-                    value: null,
-                    child: Text('Aucun client'),
-                  ),
-                  ..._customers.map((c) => DropdownMenuItem<int?>(
-                        value: c.id,
-                        child: Text('${c.name} (${c.loyaltyPoints} pts)'),
-                      )),
-                ],
-                onChanged: (v) => setState(() => _selectedCustomerId = v),
+            Text(isCredit ? 'Client (obligatoire pour le crédit)' : 'Client (optionnel)',
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<int?>(
+              value: _selectedCustomerId,
+              decoration: InputDecoration(
+                border: const OutlineInputBorder(),
+                hintText: 'Aucun client sélectionné',
+                errorText: isCredit && _selectedCustomerId == null
+                    ? 'Un client est requis pour une vente à crédit'
+                    : null,
               ),
-              const SizedBox(height: 20),
-            ],
+              items: [
+                const DropdownMenuItem<int?>(
+                  value: null,
+                  child: Text('Aucun client'),
+                ),
+                ..._customers.map((c) => DropdownMenuItem<int?>(
+                      value: c.id,
+                      child: Text('${c.name} (${c.loyaltyPoints} pts)'),
+                    )),
+              ],
+              onChanged: (v) => setState(() => _selectedCustomerId = v),
+            ),
+            const SizedBox(height: 20),
             const Text('Mode de paiement', style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             SegmentedButton<PaymentMethod>(
@@ -107,22 +116,39 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ButtonSegment(value: PaymentMethod.cash, label: Text('Cash'), icon: Icon(Icons.money)),
                 ButtonSegment(value: PaymentMethod.card, label: Text('Carte'), icon: Icon(Icons.credit_card)),
                 ButtonSegment(value: PaymentMethod.mobileMoney, label: Text('Mobile'), icon: Icon(Icons.phone_android)),
+                ButtonSegment(value: PaymentMethod.credit, label: Text('Crédit'), icon: Icon(Icons.schedule_rounded)),
               ],
               selected: {_selectedMethod},
               onSelectionChanged: (s) => setState(() => _selectedMethod = s.first),
+              showSelectedIcon: false,
             ),
             const SizedBox(height: 20),
             TextField(
               controller: _amountController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               decoration: InputDecoration(
-                labelText: 'Montant reçu ($currency)',
+                labelText: isCredit
+                    ? 'Acompte versé ($currency, optionnel)'
+                    : 'Montant reçu ($currency)',
                 border: const OutlineInputBorder(),
               ),
               onChanged: (_) => setState(() {}),
             ),
             const SizedBox(height: 12),
-            if (amountPaid > 0)
+            if (isCredit)
+              Text(
+                amountPaid > cart.total
+                    ? 'L\'acompte ne peut pas dépasser le total'
+                    : 'Solde restant à crédit : ${formatPrice(creditBalance, currency)}',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: amountPaid > cart.total
+                      ? Colors.red
+                      : AppColors.danger,
+                ),
+              )
+            else if (amountPaid > 0)
               Text(
                 change >= 0
                     ? 'Monnaie à rendre : ${formatPrice(change, currency)}'
@@ -137,12 +163,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             SizedBox(
               height: 56,
               child: ElevatedButton(
-                onPressed: (amountPaid >= cart.total && !_isProcessing)
-                    ? () => _completeSale(cart)
+                onPressed: canConfirm ? () => _completeSale(cart) : null,
+                style: isCredit
+                    ? ElevatedButton.styleFrom(backgroundColor: AppColors.danger)
                     : null,
                 child: _isProcessing
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('CONFIRMER LA VENTE', style: TextStyle(fontSize: 18)),
+                    : Text(
+                        isCredit ? 'ENREGISTRER LA VENTE À CRÉDIT' : 'CONFIRMER LA VENTE',
+                        style: const TextStyle(fontSize: 16),
+                      ),
               ),
             ),
           ],
@@ -158,7 +188,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       date: DateTime.now(),
       items: cart.items,
       paymentMethod: _selectedMethod,
-      amountPaid: double.parse(_amountController.text),
+      amountPaid: double.tryParse(_amountController.text) ?? 0,
       customerId: _selectedCustomerId,
       currency: cart.currency,
     );
@@ -180,6 +210,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         return 'Carte bancaire';
       case PaymentMethod.mobileMoney:
         return 'Mobile Money';
+      case PaymentMethod.credit:
+        return 'Crédit';
     }
   }
 
