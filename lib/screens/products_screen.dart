@@ -227,9 +227,13 @@ class _ProductEditSheetState extends State<_ProductEditSheet> {
   }
 
   Future<void> _save() async {
-    if (_nameController.text.trim().isEmpty ||
-        _selectedCategory == null ||
-        _barcodeController.text.trim().isEmpty) {
+    if (_nameController.text.trim().isEmpty || _selectedCategory == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Le nom et la catégorie sont obligatoires'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
       return;
     }
     final purchasePrice = double.tryParse(_purchasePriceController.text) ?? 0;
@@ -237,12 +241,17 @@ class _ProductEditSheetState extends State<_ProductEditSheet> {
     final stock = int.tryParse(_stockController.text) ?? 0;
     final threshold = int.tryParse(_thresholdController.text) ?? 5;
 
+    // Génère un code-barres local si aucun n'est fourni.
+    final barcode = _barcodeController.text.trim().isEmpty
+        ? 'LOCAL${DateTime.now().millisecondsSinceEpoch}'
+        : _barcodeController.text.trim();
+
     setState(() => _saving = true);
 
     final product = Product(
       id: widget.product?.id,
       name: _nameController.text.trim(),
-      barcode: _barcodeController.text.trim(),
+      barcode: barcode,
       category: _selectedCategory!,
       purchasePrice: purchasePrice,
       sellPrice: sellPrice,
@@ -316,7 +325,8 @@ class _ProductEditSheetState extends State<_ProductEditSheet> {
               const SizedBox(height: 12),
               TextField(
                 controller: _barcodeController,
-                decoration: const InputDecoration(labelText: 'Code-barres'),
+                decoration: const InputDecoration(
+                    labelText: 'Code-barres (optionnel)'),
                 keyboardType: TextInputType.number,
               ),
               const SizedBox(height: 12),
