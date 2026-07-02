@@ -1,0 +1,43 @@
+name: supermarche_app
+description: Application de gestion de supermarché
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+
+  # Base de données locale
+  sqflite: ^2.3.0
+  path: ^1.8.3
+
+  # Gestion d'état
+  provider: ^6.1.1
+
+  # Scanner de code-barres
+  mobile_scanner: ^3.5.5
+
+  # Formatage monnaie / dates
+  intl: ^0.19.0
+
+  # Génération PDF (reçus, rapports)
+  pdf: ^3.10.7
+  printing: ^5.11.1
+
+  # Partage de fichiers
+  share_plus: ^7.2.1
+
+  # Icônes et UI
+  google_fonts: ^6.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+
+flutter:
+  uses-material-design: true
