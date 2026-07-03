@@ -10,6 +10,8 @@ import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/fafoutt_logo.dart';
 import 'credit_screen.dart';
+import 'customers_screen.dart';
+import 'employees_screen.dart';
 
 enum ReportPeriod { today, week, month, custom }
 
@@ -179,6 +181,63 @@ class _ReportsScreenState extends State<ReportsScreen> {
       appBar: AppBar(
         title: const FafouttHeader(subtitle: 'Rapports de ventes'),
         actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert_rounded),
+            tooltip: 'Gestion',
+            onSelected: (value) async {
+              Widget? screen;
+              switch (value) {
+                case 'employes':
+                  screen = const EmployeesScreen();
+                  break;
+                case 'clients':
+                  screen = const CustomersScreen();
+                  break;
+                case 'creances':
+                  screen = const CreditScreen();
+                  break;
+              }
+              if (screen != null) {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => screen!),
+                );
+                _load();
+              }
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem(
+                value: 'employes',
+                child: Row(
+                  children: [
+                    Icon(Icons.badge_outlined, size: 18),
+                    SizedBox(width: 10),
+                    Text('Employés'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'clients',
+                child: Row(
+                  children: [
+                    Icon(Icons.people_outline_rounded, size: 18),
+                    SizedBox(width: 10),
+                    Text('Clients'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'creances',
+                child: Row(
+                  children: [
+                    Icon(Icons.schedule_rounded, size: 18),
+                    SizedBox(width: 10),
+                    Text('Créances'),
+                  ],
+                ),
+              ),
+            ],
+          ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.ios_share_rounded),
             tooltip: 'Exporter',

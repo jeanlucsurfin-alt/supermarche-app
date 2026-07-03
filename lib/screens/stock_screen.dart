@@ -9,9 +9,6 @@ import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/fafoutt_logo.dart';
 import 'categories_screen.dart';
-import 'credit_screen.dart';
-import 'customers_screen.dart';
-import 'employees_screen.dart';
 import 'products_screen.dart';
 import 'suppliers_screen.dart';
 
@@ -91,15 +88,6 @@ class _StockScreenState extends State<StockScreen> {
                 case 'fournisseurs':
                   screen = const SuppliersScreen();
                   break;
-                case 'employes':
-                  screen = const EmployeesScreen();
-                  break;
-                case 'clients':
-                  screen = const CustomersScreen();
-                  break;
-                case 'creances':
-                  screen = const CreditScreen();
-                  break;
               }
               if (screen != null) {
                 await Navigator.push(
@@ -140,36 +128,6 @@ class _StockScreenState extends State<StockScreen> {
                     Icon(Icons.local_shipping_outlined, size: 18),
                     SizedBox(width: 10),
                     Text('Fournisseurs'),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'employes',
-                child: Row(
-                  children: [
-                    Icon(Icons.badge_outlined, size: 18),
-                    SizedBox(width: 10),
-                    Text('Employés'),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'clients',
-                child: Row(
-                  children: [
-                    Icon(Icons.people_outline_rounded, size: 18),
-                    SizedBox(width: 10),
-                    Text('Clients'),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'creances',
-                child: Row(
-                  children: [
-                    Icon(Icons.schedule_rounded, size: 18),
-                    SizedBox(width: 10),
-                    Text('Créances'),
                   ],
                 ),
               ),
