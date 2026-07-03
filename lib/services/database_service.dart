@@ -468,7 +468,7 @@ class DatabaseService {
     // Détail par vente pour calculer le coût et répartir le bénéfice
     // entre "réalisé" (encaissé) et "en attente" (solde à crédit).
     final saleRows = await db.rawQuery('''
-      SELECT s.id, s.total, s.amountPaid, s.paymentMethod,
+      SELECT s.id, s.total, s.amountPaid, s.paymentMethod, s.customerId,
              COALESCE(SUM(p.purchasePrice * si.quantity), 0) as cost
       FROM sales s
       LEFT JOIN sale_items si ON si.saleId = s.id
@@ -476,6 +476,31 @@ class DatabaseService {
       WHERE s.date BETWEEN ? AND ?
       GROUP BY s.id
     ''', [start.toIso8601String(), end.toIso8601String()]);
+
+    // Pour chaque client concerné par une vente à crédit dans la période,
+    // on calcule quelle proportion de sa dette d'origine a depuis été
+    // remboursée, afin de répartir correctement les remboursements
+    // (qui ne sont pas liés à une vente précise) sur chacune de ses ventes.
+    final creditCustomerIds = saleRows
+        .where((r) => r['paymentMethod'] == 'credit' && r['customerId'] != null)
+        .map((r) => r['customerId'] as int)
+        .toSet();
+
+    final Map<int, double> repaidRatioByCustomer = {};
+    for (final customerId in creditCustomerIds) {
+      final owedResult = await db.rawQuery('''
+        SELECT COALESCE(SUM(total - amountPaid), 0) as owed
+        FROM sales WHERE paymentMethod = 'credit' AND customerId = ?
+      ''', [customerId]);
+      final repaidResult = await db.rawQuery('''
+        SELECT COALESCE(SUM(amount), 0) as repaid
+        FROM credit_payments WHERE customerId = ?
+      ''', [customerId]);
+      final owed = (owedResult.first['owed'] as num?)?.toDouble() ?? 0;
+      final repaid = (repaidResult.first['repaid'] as num?)?.toDouble() ?? 0;
+      repaidRatioByCustomer[customerId] =
+          owed > 0 ? (repaid / owed).clamp(0.0, 1.0) : 0.0;
+    }
 
     double realizedProfit = 0;
     double pendingProfit = 0;
@@ -487,12 +512,20 @@ class DatabaseService {
       final cost = (row['cost'] as num?)?.toDouble() ?? 0;
       final profit = saleTotal - cost;
       final method = row['paymentMethod'] as String?;
+      final customerId = row['customerId'] as int?;
 
       if (method == 'credit' && saleTotal > 0) {
-        final paidRatio = (amountPaid / saleTotal).clamp(0.0, 1.0);
+        final unpaidAtOrigin = saleTotal - amountPaid;
+        final repaidRatio = customerId != null
+            ? (repaidRatioByCustomer[customerId] ?? 0.0)
+            : 0.0;
+        final stillOwed = unpaidAtOrigin * (1 - repaidRatio);
+        final totalPaidNow = saleTotal - stillOwed;
+        final paidRatio = (totalPaidNow / saleTotal).clamp(0.0, 1.0);
+
         realizedProfit += profit * paidRatio;
         pendingProfit += profit * (1 - paidRatio);
-        pendingCreditAmount += (saleTotal - amountPaid);
+        pendingCreditAmount += stillOwed;
       } else {
         realizedProfit += profit;
       }
