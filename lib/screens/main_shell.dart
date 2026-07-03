@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../models/employee.dart';
+import '../providers/session_provider.dart';
+import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 import 'pos_screen.dart';
 import 'reports_screen.dart';
@@ -13,17 +17,39 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _index = 0;
+  int _lowStockCount = 0;
 
-  final _screens = const [
-    PosScreen(),
-    StockScreen(),
-    ReportsScreen(),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadLowStockCount();
+  }
+
+  Future<void> _loadLowStockCount() async {
+    final products = await DatabaseService().getAllProducts();
+    final count = products.where((p) => p.isLowStock).length;
+    if (mounted) setState(() => _lowStockCount = count);
+  }
 
   @override
   Widget build(BuildContext context) {
+    final session = context.watch<SessionProvider>();
+    final role = session.currentEmployee?.role ?? EmployeeRole.caissier;
+    final isCashierOnly = role == EmployeeRole.caissier;
+
+    // Un caissier n'a accès qu'au module Vente.
+    if (isCashierOnly) {
+      return const PosScreen();
+    }
+
+    final screens = const [
+      PosScreen(),
+      StockScreen(),
+      ReportsScreen(),
+    ];
+
     return Scaffold(
-      body: IndexedStack(index: _index, children: _screens),
+      body: IndexedStack(index: _index, children: screens),
       bottomNavigationBar: NavigationBarTheme(
         data: NavigationBarThemeData(
           indicatorColor: AppColors.navy.withOpacity(0.1),
@@ -38,21 +64,38 @@ class _MainShellState extends State<MainShell> {
         ),
         child: NavigationBar(
           selectedIndex: _index,
-          onDestinationSelected: (i) => setState(() => _index = i),
+          onDestinationSelected: (i) {
+            setState(() => _index = i);
+            if (i == 1) _loadLowStockCount();
+          },
           backgroundColor: Colors.white,
           height: 62,
-          destinations: const [
-            NavigationDestination(
+          destinations: [
+            const NavigationDestination(
               icon: Icon(Icons.point_of_sale_outlined, color: AppColors.textSecondary),
               selectedIcon: Icon(Icons.point_of_sale_rounded, color: AppColors.navy),
               label: 'Vente',
             ),
             NavigationDestination(
-              icon: Icon(Icons.inventory_2_outlined, color: AppColors.textSecondary),
-              selectedIcon: Icon(Icons.inventory_2_rounded, color: AppColors.navy),
+              icon: _lowStockCount > 0
+                  ? Badge(
+                      label: Text('$_lowStockCount'),
+                      backgroundColor: AppColors.danger,
+                      child: const Icon(Icons.inventory_2_outlined,
+                          color: AppColors.textSecondary),
+                    )
+                  : const Icon(Icons.inventory_2_outlined,
+                      color: AppColors.textSecondary),
+              selectedIcon: _lowStockCount > 0
+                  ? Badge(
+                      label: Text('$_lowStockCount'),
+                      backgroundColor: AppColors.danger,
+                      child: const Icon(Icons.inventory_2_rounded, color: AppColors.navy),
+                    )
+                  : const Icon(Icons.inventory_2_rounded, color: AppColors.navy),
               label: 'Stocks',
             ),
-            NavigationDestination(
+            const NavigationDestination(
               icon: Icon(Icons.bar_chart_outlined, color: AppColors.textSecondary),
               selectedIcon: Icon(Icons.bar_chart_rounded, color: AppColors.navy),
               label: 'Rapports',

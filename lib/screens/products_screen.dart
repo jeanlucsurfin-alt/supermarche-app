@@ -237,6 +237,24 @@ class _ProductEditSheetState extends State<_ProductEditSheet> {
     if (picked != null) setState(() => _expiryDate = picked);
   }
 
+  Future<void> _fillUsdFromExchangeRate() async {
+    final rateStr = await widget.db.getSetting('exchangeRate');
+    final rate = double.tryParse(rateStr ?? '') ?? 130.0;
+    if (rate <= 0) return;
+
+    final purchaseHTG = double.tryParse(_purchasePriceController.text) ?? 0;
+    final sellHTG = double.tryParse(_sellPriceController.text) ?? 0;
+
+    setState(() {
+      if (purchaseHTG > 0) {
+        _purchasePriceUSDController.text = (purchaseHTG / rate).toStringAsFixed(2);
+      }
+      if (sellHTG > 0) {
+        _sellPriceUSDController.text = (sellHTG / rate).toStringAsFixed(2);
+      }
+    });
+  }
+
   Future<void> _save() async {
     if (_nameController.text.trim().isEmpty || _selectedCategory == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -390,6 +408,15 @@ class _ProductEditSheetState extends State<_ProductEditSheet> {
                     ),
                   ),
                 ],
+              ),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: _fillUsdFromExchangeRate,
+                  icon: const Icon(Icons.currency_exchange_rounded, size: 15),
+                  label: const Text('Calculer via le taux de change',
+                      style: TextStyle(fontSize: 12)),
+                ),
               ),
               const SizedBox(height: 12),
               Row(

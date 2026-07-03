@@ -8,6 +8,7 @@ import '../providers/category_provider.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/fafoutt_logo.dart';
+import '../widgets/logout_button.dart';
 import 'categories_screen.dart';
 import 'products_screen.dart';
 import 'suppliers_screen.dart';
@@ -133,6 +134,7 @@ class _StockScreenState extends State<StockScreen> {
               ),
             ],
           ),
+          const LogoutButton(),
           const SizedBox(width: 4),
         ],
       ),

@@ -9,9 +9,11 @@ import 'package:share_plus/share_plus.dart' show Share, XFile;
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/fafoutt_logo.dart';
+import '../widgets/logout_button.dart';
 import 'credit_screen.dart';
 import 'customers_screen.dart';
 import 'employees_screen.dart';
+import 'settings_screen.dart';
 
 enum ReportPeriod { today, week, month, custom }
 
@@ -196,6 +198,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 case 'creances':
                   screen = const CreditScreen();
                   break;
+                case 'parametres':
+                  screen = const SettingsScreen();
+                  break;
               }
               if (screen != null) {
                 await Navigator.push(
@@ -236,6 +241,16 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   ],
                 ),
               ),
+              PopupMenuItem(
+                value: 'parametres',
+                child: Row(
+                  children: [
+                    Icon(Icons.settings_outlined, size: 18),
+                    SizedBox(width: 10),
+                    Text('Paramètres'),
+                  ],
+                ),
+              ),
             ],
           ),
           PopupMenuButton<String>(
@@ -268,6 +283,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               ),
             ],
           ),
+          const LogoutButton(),
           const SizedBox(width: 4),
         ],
       ),

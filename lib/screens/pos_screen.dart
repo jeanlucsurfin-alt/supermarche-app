@@ -7,6 +7,7 @@ import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/currency.dart';
 import '../widgets/fafoutt_logo.dart';
+import '../widgets/logout_button.dart';
 import 'barcode_scanner_screen.dart';
 import 'categories_screen.dart';
 import 'checkout_screen.dart';
@@ -135,6 +136,7 @@ class _PosScreenState extends State<PosScreen> {
             tooltip: 'Scanner un code-barres',
             onPressed: _scanBarcode,
           ),
+          const LogoutButton(),
           const SizedBox(width: 4),
         ],
       ),

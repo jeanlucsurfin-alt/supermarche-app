@@ -26,7 +26,7 @@ class DatabaseService {
     final path = join(await getDatabasesPath(), 'fafoutt_store.db');
     return await openDatabase(
       path,
-      version: 8,
+      version: 9,
       onCreate: _onCreate,
       onUpgrade: (db, oldVersion, newVersion) async {
         await db.execute('DROP TABLE IF EXISTS sale_items');
@@ -39,6 +39,7 @@ class DatabaseService {
         await db.execute('DROP TABLE IF EXISTS employee_shifts');
         await db.execute('DROP TABLE IF EXISTS customers');
         await db.execute('DROP TABLE IF EXISTS credit_payments');
+        await db.execute('DROP TABLE IF EXISTS app_settings');
         await _onCreate(db, newVersion);
       },
     );
@@ -94,6 +95,20 @@ class DatabaseService {
     ''');
 
     await db.execute('''
+      CREATE TABLE app_settings(
+        key TEXT PRIMARY KEY,
+        value TEXT
+      )
+    ''');
+
+    await db.insert('app_settings', {'key': 'storeName', 'value': 'Fafoutt Store'});
+    await db.insert('app_settings', {'key': 'storeAddress', 'value': ''});
+    await db.insert('app_settings', {'key': 'storePhone', 'value': ''});
+    await db.insert('app_settings', {'key': 'exchangeRate', 'value': '130'});
+    await db.insert('app_settings', {'key': 'loyaltyEnabled', 'value': 'true'});
+    await db.insert('app_settings', {'key': 'lastBackupDate', 'value': ''});
+
+    await db.execute('''
       CREATE TABLE sale_items(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         saleId INTEGER NOT NULL,
@@ -113,6 +128,14 @@ class DatabaseService {
         pin TEXT NOT NULL
       )
     ''');
+
+    // Compte administrateur par défaut, pour pouvoir se connecter dès
+    // la première installation (à modifier ensuite dans Employés).
+    await db.insert('employees', {
+      'name': 'Administrateur',
+      'role': 'admin',
+      'pin': '0000',
+    });
 
     await db.execute('''
       CREATE TABLE employee_shifts(
@@ -410,8 +433,14 @@ class DatabaseService {
         }
       }
 
-      // Attribution de points de fidélité : 1 point par 100 HTG dépensés.
-      if (sale.customerId != null) {
+      // Attribution de points de fidélité : 1 point par 100 HTG dépensés,
+      // seulement si le programme est activé dans les paramètres.
+      final loyaltySetting = await txn.query('app_settings',
+          where: 'key = ?', whereArgs: ['loyaltyEnabled']);
+      final loyaltyEnabled = loyaltySetting.isEmpty ||
+          loyaltySetting.first['value'] == 'true';
+
+      if (sale.customerId != null && loyaltyEnabled) {
         final earnedPoints = (sale.total / 100).floor();
         if (earnedPoints > 0) {
           final customerRows = await txn.query(
@@ -857,5 +886,46 @@ class DatabaseService {
       whereArgs: [customerId],
       orderBy: 'date DESC',
     );
+  }
+
+  // ---- PARAMÈTRES ----
+  Future<String?> getSetting(String key) async {
+    final db = await database;
+    final result =
+        await db.query('app_settings', where: 'key = ?', whereArgs: [key]);
+    if (result.isEmpty) return null;
+    return result.first['value'] as String?;
+  }
+
+  Future<Map<String, String>> getAllSettings() async {
+    final db = await database;
+    final rows = await db.query('app_settings');
+    return {
+      for (final row in rows) row['key'] as String: (row['value'] as String?) ?? ''
+    };
+  }
+
+  Future<void> setSetting(String key, String value) async {
+    final db = await database;
+    await db.insert(
+      'app_settings',
+      {'key': key, 'value': value},
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  /// Chemin du fichier de base de données, utilisé pour la sauvegarde
+  /// et la restauration.
+  Future<String> getDatabasePath() async {
+    return join(await getDatabasesPath(), 'fafoutt_store.db');
+  }
+
+  /// Ferme la connexion actuelle à la base de données (nécessaire avant
+  /// de remplacer le fichier lors d'une restauration).
+  Future<void> closeDatabase() async {
+    if (_database != null) {
+      await _database!.close();
+      _database = null;
+    }
   }
 }
