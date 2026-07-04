@@ -9,6 +9,7 @@ import '../models/employee.dart';
 import '../models/employee_shift.dart';
 import '../models/customer.dart';
 import '../models/credit_payment.dart';
+import '../models/cash_closing.dart';
 
 class DatabaseService {
   static final DatabaseService _instance = DatabaseService._internal();
@@ -26,7 +27,7 @@ class DatabaseService {
     final path = join(await getDatabasesPath(), 'fafoutt_store.db');
     return await openDatabase(
       path,
-      version: 9,
+      version: 10,
       onCreate: _onCreate,
       onUpgrade: (db, oldVersion, newVersion) async {
         await db.execute('DROP TABLE IF EXISTS sale_items');
@@ -40,6 +41,7 @@ class DatabaseService {
         await db.execute('DROP TABLE IF EXISTS customers');
         await db.execute('DROP TABLE IF EXISTS credit_payments');
         await db.execute('DROP TABLE IF EXISTS app_settings');
+        await db.execute('DROP TABLE IF EXISTS cash_closings');
         await _onCreate(db, newVersion);
       },
     );
@@ -98,6 +100,18 @@ class DatabaseService {
       CREATE TABLE app_settings(
         key TEXT PRIMARY KEY,
         value TEXT
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE cash_closings(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        employeeId INTEGER NOT NULL,
+        employeeName TEXT NOT NULL,
+        expectedCash REAL NOT NULL,
+        countedCash REAL NOT NULL,
+        date TEXT NOT NULL,
+        note TEXT
       )
     ''');
 
@@ -927,5 +941,44 @@ class DatabaseService {
       await _database!.close();
       _database = null;
     }
+  }
+
+  // ---- CLÔTURE DE CAISSE ----
+
+  /// Date/heure de la dernière clôture enregistrée (toutes caisses/employés
+  /// confondus), ou null si aucune clôture n'a encore été faite.
+  Future<DateTime?> getLastClosingDate() async {
+    final db = await database;
+    final result = await db.query('cash_closings',
+        orderBy: 'date DESC', limit: 1);
+    if (result.isEmpty) return null;
+    return DateTime.parse(result.first['date'] as String);
+  }
+
+  /// Montant de cash attendu en caisse depuis la dernière clôture
+  /// (ou depuis minuit s'il n'y a jamais eu de clôture).
+  Future<double> getExpectedCashSinceLastClosing() async {
+    final lastClosing = await getLastClosingDate();
+    final start = lastClosing ??
+        DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    final db = await database;
+    final result = await db.rawQuery('''
+      SELECT COALESCE(SUM(total), 0) as total
+      FROM sales
+      WHERE paymentMethod = 'cash' AND date >= ?
+    ''', [start.toIso8601String()]);
+    return (result.first['total'] as num?)?.toDouble() ?? 0;
+  }
+
+  Future<int> insertCashClosing(CashClosing closing) async {
+    final db = await database;
+    return await db.insert('cash_closings', closing.toMap()..remove('id'));
+  }
+
+  Future<List<CashClosing>> getCashClosingHistory({int limit = 30}) async {
+    final db = await database;
+    final maps = await db.query('cash_closings',
+        orderBy: 'date DESC', limit: limit);
+    return maps.map((m) => CashClosing.fromMap(m)).toList();
   }
 }

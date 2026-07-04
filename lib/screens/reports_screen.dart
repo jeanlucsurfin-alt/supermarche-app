@@ -13,6 +13,7 @@ import '../widgets/logout_button.dart';
 import 'credit_screen.dart';
 import 'customers_screen.dart';
 import 'employees_screen.dart';
+import 'cash_closing_screen.dart';
 import 'settings_screen.dart';
 
 enum ReportPeriod { today, week, month, custom }
@@ -201,6 +202,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 case 'parametres':
                   screen = const SettingsScreen();
                   break;
+                case 'cloture':
+                  screen = const CashClosingScreen();
+                  break;
               }
               if (screen != null) {
                 await Navigator.push(
@@ -248,6 +252,16 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     Icon(Icons.settings_outlined, size: 18),
                     SizedBox(width: 10),
                     Text('Paramètres'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'cloture',
+                child: Row(
+                  children: [
+                    Icon(Icons.point_of_sale_rounded, size: 18),
+                    SizedBox(width: 10),
+                    Text('Clôture de caisse'),
                   ],
                 ),
               ),
