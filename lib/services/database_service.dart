@@ -11,6 +11,7 @@ import '../models/customer.dart';
 import '../models/credit_payment.dart';
 import '../models/cash_closing.dart';
 import '../models/sale_return.dart';
+import '../models/purchase_order.dart';
 
 class DatabaseService {
   static final DatabaseService _instance = DatabaseService._internal();
@@ -28,7 +29,7 @@ class DatabaseService {
     final path = join(await getDatabasesPath(), 'fafoutt_store.db');
     return await openDatabase(
       path,
-      version: 11,
+      version: 12,
       onCreate: _onCreate,
       onUpgrade: (db, oldVersion, newVersion) async {
         await db.execute('DROP TABLE IF EXISTS sale_items');
@@ -45,6 +46,8 @@ class DatabaseService {
         await db.execute('DROP TABLE IF EXISTS cash_closings');
         await db.execute('DROP TABLE IF EXISTS sale_returns');
         await db.execute('DROP TABLE IF EXISTS sale_return_items');
+        await db.execute('DROP TABLE IF EXISTS purchase_orders');
+        await db.execute('DROP TABLE IF EXISTS purchase_order_items');
         await _onCreate(db, newVersion);
       },
     );
@@ -137,6 +140,28 @@ class DatabaseService {
         productId INTEGER NOT NULL,
         productName TEXT NOT NULL,
         quantity INTEGER NOT NULL,
+        unitPrice REAL NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE purchase_orders(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        supplierId INTEGER NOT NULL,
+        supplierName TEXT NOT NULL,
+        date TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending'
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE purchase_order_items(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        orderId INTEGER NOT NULL,
+        productId INTEGER NOT NULL,
+        productName TEXT NOT NULL,
+        quantityOrdered INTEGER NOT NULL,
+        quantityReceived INTEGER NOT NULL DEFAULT 0,
         unitPrice REAL NOT NULL
       )
     ''');
@@ -1105,5 +1130,111 @@ class DatabaseService {
       WHERE date BETWEEN ? AND ?
     ''', [start.toIso8601String(), end.toIso8601String()]);
     return (result.first['total'] as num?)?.toDouble() ?? 0;
+  }
+
+  // ---- BONS DE COMMANDE FOURNISSEURS ----
+
+  Future<int> createPurchaseOrder(
+      PurchaseOrder order, List<PurchaseOrderItem> items) async {
+    final db = await database;
+    return await db.transaction((txn) async {
+      final orderId =
+          await txn.insert('purchase_orders', order.toMap()..remove('id'));
+      for (final item in items) {
+        final map = item.toMap()
+          ..remove('id')
+          ..['orderId'] = orderId;
+        await txn.insert('purchase_order_items', map);
+      }
+      return orderId;
+    });
+  }
+
+  Future<List<PurchaseOrder>> getPurchaseOrdersForSupplier(
+      int supplierId) async {
+    final db = await database;
+    final maps = await db.query('purchase_orders',
+        where: 'supplierId = ?', whereArgs: [supplierId], orderBy: 'date DESC');
+    return maps.map((m) => PurchaseOrder.fromMap(m)).toList();
+  }
+
+  Future<List<PurchaseOrderItem>> getPurchaseOrderItems(int orderId) async {
+    final db = await database;
+    final maps = await db.query('purchase_order_items',
+        where: 'orderId = ?', whereArgs: [orderId]);
+    return maps.map((m) => PurchaseOrderItem.fromMap(m)).toList();
+  }
+
+  /// Réceptionne des quantités pour un bon de commande : met à jour le
+  /// stock des produits concernés, journalise un mouvement d'entrée, et
+  /// recalcule automatiquement le statut du bon de commande.
+  Future<void> receivePurchaseOrderItems(
+      int orderId, Map<int, int> receivedQuantitiesByItemId) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      for (final entry in receivedQuantitiesByItemId.entries) {
+        final itemId = entry.key;
+        final qtyToReceive = entry.value;
+        if (qtyToReceive <= 0) continue;
+
+        final itemRows = await txn
+            .query('purchase_order_items', where: 'id = ?', whereArgs: [itemId]);
+        if (itemRows.isEmpty) continue;
+        final item = PurchaseOrderItem.fromMap(itemRows.first);
+
+        final newReceived =
+            (item.quantityReceived + qtyToReceive).clamp(0, item.quantityOrdered);
+        await txn.update(
+          'purchase_order_items',
+          {'quantityReceived': newReceived},
+          where: 'id = ?',
+          whereArgs: [itemId],
+        );
+
+        final productRows = await txn.query('products',
+            where: 'id = ?', whereArgs: [item.productId]);
+        if (productRows.isNotEmpty) {
+          final currentStock = productRows.first['stockQuantity'] as int;
+          await txn.update(
+            'products',
+            {'stockQuantity': currentStock + qtyToReceive},
+            where: 'id = ?',
+            whereArgs: [item.productId],
+          );
+        }
+
+        await txn.insert('stock_movements', {
+          'productId': item.productId,
+          'productName': item.productName,
+          'type': 'entry',
+          'quantity': qtyToReceive,
+          'reason': 'Réception commande #$orderId',
+          'supplierId': null,
+          'date': DateTime.now().toIso8601String(),
+        });
+      }
+
+      // Recalcule le statut global du bon de commande.
+      final allItemsRows = await txn
+          .query('purchase_order_items', where: 'orderId = ?', whereArgs: [orderId]);
+      final allItems = allItemsRows.map((m) => PurchaseOrderItem.fromMap(m)).toList();
+      final totalOrdered = allItems.fold(0, (sum, i) => sum + i.quantityOrdered);
+      final totalReceived = allItems.fold(0, (sum, i) => sum + i.quantityReceived);
+
+      String newStatus;
+      if (totalReceived <= 0) {
+        newStatus = PurchaseOrderStatus.pending.name;
+      } else if (totalReceived >= totalOrdered) {
+        newStatus = PurchaseOrderStatus.received.name;
+      } else {
+        newStatus = PurchaseOrderStatus.partiallyReceived.name;
+      }
+      await txn.update(
+        'purchase_orders',
+        {'status': newStatus},
+        where: 'id = ?',
+        whereArgs: [orderId],
+      );
+    });
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/supplier.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
+import 'supplier_orders_screen.dart';
 
 class SuppliersScreen extends StatefulWidget {
   const SuppliersScreen({super.key});
@@ -137,6 +138,15 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                 return Card(
                   margin: const EdgeInsets.only(bottom: 10),
                   child: ListTile(
+                    onTap: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              SupplierOrdersScreen(supplier: supplier),
+                        ),
+                      );
+                    },
                     leading: Container(
                       width: 40,
                       height: 40,
@@ -156,10 +166,17 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                           : supplier.phone,
                       style: const TextStyle(fontSize: 12),
                     ),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete_outline,
-                          color: AppColors.textSecondary, size: 20),
-                      onPressed: () => _confirmDelete(supplier),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline,
+                              color: AppColors.textSecondary, size: 20),
+                          onPressed: () => _confirmDelete(supplier),
+                        ),
+                        const Icon(Icons.chevron_right_rounded,
+                            color: AppColors.textSecondary, size: 18),
+                      ],
                     ),
                   ),
                 );
