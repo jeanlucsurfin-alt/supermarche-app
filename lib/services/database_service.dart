@@ -10,6 +10,7 @@ import '../models/employee_shift.dart';
 import '../models/customer.dart';
 import '../models/credit_payment.dart';
 import '../models/cash_closing.dart';
+import '../models/sale_return.dart';
 
 class DatabaseService {
   static final DatabaseService _instance = DatabaseService._internal();
@@ -27,7 +28,7 @@ class DatabaseService {
     final path = join(await getDatabasesPath(), 'fafoutt_store.db');
     return await openDatabase(
       path,
-      version: 10,
+      version: 11,
       onCreate: _onCreate,
       onUpgrade: (db, oldVersion, newVersion) async {
         await db.execute('DROP TABLE IF EXISTS sale_items');
@@ -42,6 +43,8 @@ class DatabaseService {
         await db.execute('DROP TABLE IF EXISTS credit_payments');
         await db.execute('DROP TABLE IF EXISTS app_settings');
         await db.execute('DROP TABLE IF EXISTS cash_closings');
+        await db.execute('DROP TABLE IF EXISTS sale_returns');
+        await db.execute('DROP TABLE IF EXISTS sale_return_items');
         await _onCreate(db, newVersion);
       },
     );
@@ -112,6 +115,29 @@ class DatabaseService {
         countedCash REAL NOT NULL,
         date TEXT NOT NULL,
         note TEXT
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE sale_returns(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        saleId INTEGER NOT NULL,
+        date TEXT NOT NULL,
+        employeeId INTEGER NOT NULL,
+        employeeName TEXT NOT NULL,
+        reason TEXT,
+        totalRefunded REAL NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE sale_return_items(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        returnId INTEGER NOT NULL,
+        productId INTEGER NOT NULL,
+        productName TEXT NOT NULL,
+        quantity INTEGER NOT NULL,
+        unitPrice REAL NOT NULL
       )
     ''');
 
@@ -574,6 +600,8 @@ class DatabaseService {
       }
     }
 
+    final returnsTotal = await getTotalReturns(start, end);
+
     return {
       'transactionCount': transactionCount,
       'revenue': revenue,
@@ -582,6 +610,8 @@ class DatabaseService {
       'pendingProfit': pendingProfit,
       'pendingCreditAmount': pendingCreditAmount,
       'averageBasket': transactionCount > 0 ? revenue / transactionCount : 0,
+      'returnsTotal': returnsTotal,
+      'netRevenue': revenue - returnsTotal,
     };
   }
 
@@ -980,5 +1010,100 @@ class DatabaseService {
     final maps = await db.query('cash_closings',
         orderBy: 'date DESC', limit: limit);
     return maps.map((m) => CashClosing.fromMap(m)).toList();
+  }
+
+  // ---- RETOURS ET REMBOURSEMENTS ----
+
+  /// Ventes récentes, pour sélectionner celle à rembourser.
+  Future<List<Map<String, dynamic>>> getRecentSales({int limit = 50}) async {
+    final db = await database;
+    return await db.query('sales', orderBy: 'date DESC', limit: limit);
+  }
+
+  Future<Map<String, dynamic>?> getSaleById(int saleId) async {
+    final db = await database;
+    final result =
+        await db.query('sales', where: 'id = ?', whereArgs: [saleId]);
+    if (result.isEmpty) return null;
+    return result.first;
+  }
+
+  Future<List<Map<String, dynamic>>> getSaleItemsForSale(int saleId) async {
+    final db = await database;
+    return await db.query('sale_items',
+        where: 'saleId = ?', whereArgs: [saleId]);
+  }
+
+  /// Quantité déjà retournée pour un produit donné d'une vente donnée
+  /// (pour éviter de rembourser plus que ce qui a été vendu).
+  Future<int> getReturnedQuantity(int saleId, int productId) async {
+    final db = await database;
+    final result = await db.rawQuery('''
+      SELECT COALESCE(SUM(sri.quantity), 0) as qty
+      FROM sale_return_items sri
+      JOIN sale_returns sr ON sr.id = sri.returnId
+      WHERE sr.saleId = ? AND sri.productId = ?
+    ''', [saleId, productId]);
+    return (result.first['qty'] as num?)?.toInt() ?? 0;
+  }
+
+  /// Traite un retour : enregistre le remboursement, remet les produits
+  /// en stock, et journalise le mouvement de stock correspondant.
+  Future<void> processReturn(SaleReturn saleReturn) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      final returnId =
+          await txn.insert('sale_returns', saleReturn.toMap()..remove('id'));
+
+      for (final item in saleReturn.items) {
+        await txn.insert('sale_return_items', item.toMap(returnId));
+
+        final productRows = await txn.query('products',
+            where: 'id = ?', whereArgs: [item.productId]);
+        if (productRows.isNotEmpty) {
+          final currentStock = productRows.first['stockQuantity'] as int;
+          await txn.update(
+            'products',
+            {'stockQuantity': currentStock + item.quantity},
+            where: 'id = ?',
+            whereArgs: [item.productId],
+          );
+        }
+
+        await txn.insert('stock_movements', {
+          'productId': item.productId,
+          'productName': item.productName,
+          'type': 'entry',
+          'quantity': item.quantity,
+          'reason': 'Retour vente #${saleReturn.saleId}',
+          'supplierId': null,
+          'date': saleReturn.date.toIso8601String(),
+        });
+      }
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> getReturnsForSale(int saleId) async {
+    final db = await database;
+    return await db.query('sale_returns',
+        where: 'saleId = ?', whereArgs: [saleId], orderBy: 'date DESC');
+  }
+
+  Future<List<Map<String, dynamic>>> getReturnItemsForReturn(
+      int returnId) async {
+    final db = await database;
+    return await db.query('sale_return_items',
+        where: 'returnId = ?', whereArgs: [returnId]);
+  }
+
+  /// Total des retours effectués sur une période (pour les rapports).
+  Future<double> getTotalReturns(DateTime start, DateTime end) async {
+    final db = await database;
+    final result = await db.rawQuery('''
+      SELECT COALESCE(SUM(totalRefunded), 0) as total
+      FROM sale_returns
+      WHERE date BETWEEN ? AND ?
+    ''', [start.toIso8601String(), end.toIso8601String()]);
+    return (result.first['total'] as num?)?.toDouble() ?? 0;
   }
 }

@@ -14,6 +14,7 @@ import 'credit_screen.dart';
 import 'customers_screen.dart';
 import 'employees_screen.dart';
 import 'cash_closing_screen.dart';
+import 'returns_screen.dart';
 import 'settings_screen.dart';
 
 enum ReportPeriod { today, week, month, custom }
@@ -38,6 +39,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
     'realizedProfit': 0,
     'pendingProfit': 0,
     'pendingCreditAmount': 0,
+    'returnsTotal': 0,
+    'netRevenue': 0,
     'averageBasket': 0,
   };
   List<Map<String, dynamic>> _topProducts = [];
@@ -205,6 +208,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 case 'cloture':
                   screen = const CashClosingScreen();
                   break;
+                case 'retours':
+                  screen = const ReturnsScreen();
+                  break;
               }
               if (screen != null) {
                 await Navigator.push(
@@ -262,6 +268,16 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     Icon(Icons.point_of_sale_rounded, size: 18),
                     SizedBox(width: 10),
                     Text('Clôture de caisse'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'retours',
+                child: Row(
+                  children: [
+                    Icon(Icons.undo_rounded, size: 18),
+                    SizedBox(width: 10),
+                    Text('Retours'),
                   ],
                 ),
               ),
@@ -453,6 +469,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     label: 'Crédit accordé (période)',
                     value:
                         _currencyFormat.format(_summary['pendingCreditAmount']),
+                    color: AppColors.danger,
+                  ),
+                  _StatCard(
+                    icon: Icons.undo_rounded,
+                    label: 'Retours (période)',
+                    value: '- ${_currencyFormat.format(_summary['returnsTotal'])}',
                     color: AppColors.danger,
                   ),
                 ],
