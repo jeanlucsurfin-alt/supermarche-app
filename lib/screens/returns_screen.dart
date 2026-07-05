@@ -231,6 +231,13 @@ class _ReturnSheetState extends State<_ReturnSheet> {
           _reasonController.text.trim().isEmpty ? null : _reasonController.text.trim(),
       items: itemsToReturn,
     ));
+    await widget.db.logActivity(
+      employeeId: employee.id,
+      employeeName: employee.name,
+      action: 'Retour vente',
+      description:
+          'Vente #$_saleId · ${_currencyFormat.format(_totalToRefund)} remboursé',
+    );
 
     if (mounted) Navigator.pop(context, true);
   }

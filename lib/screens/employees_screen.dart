@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../models/employee.dart';
 import '../models/employee_shift.dart';
+import '../providers/session_provider.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 
@@ -140,6 +142,15 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
     );
     if (confirm == true) {
       await _db.deleteEmployee(employee.id!);
+      final currentEmployee = context.mounted
+          ? context.read<SessionProvider>().currentEmployee
+          : null;
+      await _db.logActivity(
+        employeeId: currentEmployee?.id,
+        employeeName: currentEmployee?.name ?? 'Inconnu',
+        action: 'Suppression employé',
+        description: '${employee.name} (${employee.role.label})',
+      );
       _load();
     }
   }

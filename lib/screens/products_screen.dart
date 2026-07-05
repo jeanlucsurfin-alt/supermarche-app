@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../models/product.dart';
 import '../providers/category_provider.dart';
+import '../providers/session_provider.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 
@@ -83,6 +84,15 @@ class _ProductsScreenState extends State<ProductsScreen> {
     );
     if (confirm == true) {
       await _db.deleteProduct(product.id!);
+      final employee = context.mounted
+          ? context.read<SessionProvider>().currentEmployee
+          : null;
+      await _db.logActivity(
+        employeeId: employee?.id,
+        employeeName: employee?.name ?? 'Inconnu',
+        action: 'Suppression produit',
+        description: '${product.name} (${product.category})',
+      );
       _load();
     }
   }
@@ -297,6 +307,18 @@ class _ProductEditSheetState extends State<_ProductEditSheet> {
     try {
       if (_isEditing) {
         await widget.db.updateProduct(product);
+        final priceChanged = widget.product!.sellPrice != sellPrice ||
+            widget.product!.purchasePrice != purchasePrice;
+        if (priceChanged && mounted) {
+          final employee = context.read<SessionProvider>().currentEmployee;
+          await widget.db.logActivity(
+            employeeId: employee?.id,
+            employeeName: employee?.name ?? 'Inconnu',
+            action: 'Modification prix',
+            description:
+                '${product.name} : ${widget.product!.sellPrice.toStringAsFixed(0)} → ${sellPrice.toStringAsFixed(0)} HTG',
+          );
+        }
       } else {
         await widget.db.insertProduct(product);
       }

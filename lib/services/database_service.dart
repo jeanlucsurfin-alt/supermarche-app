@@ -14,6 +14,7 @@ import '../models/sale_return.dart';
 import '../models/purchase_order.dart';
 import '../models/expense.dart';
 import '../models/promotion.dart';
+import '../models/activity_log.dart';
 
 class DatabaseService {
   static final DatabaseService _instance = DatabaseService._internal();
@@ -31,7 +32,7 @@ class DatabaseService {
     final path = join(await getDatabasesPath(), 'fafoutt_store.db');
     return await openDatabase(
       path,
-      version: 14,
+      version: 15,
       onCreate: _onCreate,
       onUpgrade: (db, oldVersion, newVersion) async {
         await db.execute('DROP TABLE IF EXISTS sale_items');
@@ -52,6 +53,7 @@ class DatabaseService {
         await db.execute('DROP TABLE IF EXISTS purchase_order_items');
         await db.execute('DROP TABLE IF EXISTS expenses');
         await db.execute('DROP TABLE IF EXISTS promotions');
+        await db.execute('DROP TABLE IF EXISTS activity_logs');
         await _onCreate(db, newVersion);
       },
     );
@@ -195,6 +197,17 @@ class DatabaseService {
         promoCode TEXT,
         startDate TEXT NOT NULL,
         endDate TEXT NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE activity_logs(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date TEXT NOT NULL,
+        employeeId INTEGER,
+        employeeName TEXT NOT NULL,
+        action TEXT NOT NULL,
+        description TEXT NOT NULL
       )
     ''');
 
@@ -1357,5 +1370,30 @@ class DatabaseService {
         p.isActiveOn(now));
     if (match.isEmpty) return null;
     return match.first;
+  }
+
+  // ---- JOURNAL D'ACTIVITÉ ----
+
+  Future<void> logActivity({
+    int? employeeId,
+    required String employeeName,
+    required String action,
+    required String description,
+  }) async {
+    final db = await database;
+    await db.insert('activity_logs', {
+      'date': DateTime.now().toIso8601String(),
+      'employeeId': employeeId,
+      'employeeName': employeeName,
+      'action': action,
+      'description': description,
+    });
+  }
+
+  Future<List<ActivityLog>> getActivityLogs({int limit = 100}) async {
+    final db = await database;
+    final maps =
+        await db.query('activity_logs', orderBy: 'date DESC', limit: limit);
+    return maps.map((m) => ActivityLog.fromMap(m)).toList();
   }
 }

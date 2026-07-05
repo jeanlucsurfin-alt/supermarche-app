@@ -16,6 +16,7 @@ import 'employees_screen.dart';
 import 'cash_closing_screen.dart';
 import 'returns_screen.dart';
 import 'expenses_screen.dart';
+import 'activity_log_screen.dart';
 import 'settings_screen.dart';
 
 enum ReportPeriod { today, week, month, custom }
@@ -217,6 +218,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 case 'depenses':
                   screen = const ExpensesScreen();
                   break;
+                case 'journal':
+                  screen = const ActivityLogScreen();
+                  break;
               }
               if (screen != null) {
                 await Navigator.push(
@@ -294,6 +298,16 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     Icon(Icons.trending_down_rounded, size: 18),
                     SizedBox(width: 10),
                     Text('Dépenses'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'journal',
+                child: Row(
+                  children: [
+                    Icon(Icons.history_rounded, size: 18),
+                    SizedBox(width: 10),
+                    Text('Journal d\'activité'),
                   ],
                 ),
               ),
