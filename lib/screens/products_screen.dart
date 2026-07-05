@@ -227,6 +227,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        foregroundColor: Colors.white,
         onPressed: () => _openEditSheet(),
         backgroundColor: AppColors.navy,
         icon: const Icon(Icons.add_rounded),

@@ -7,6 +7,7 @@ import '../widgets/fafoutt_logo.dart';
 import '../widgets/main_menu_sheet.dart';
 import 'employees_screen.dart';
 import 'credit_screen.dart';
+import 'expenses_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   final ValueChanged<int> onNavigate;
@@ -162,7 +163,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           value: _currencyFormat.format(_todayExpenses),
                           subLabel: 'aujourd\'hui',
                           color: AppColors.danger,
-                          onTap: () => widget.onNavigate(3),
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const ExpensesScreen()),
+                          ).then((_) => _load()),
                         ),
                       ),
                       const SizedBox(width: 12),

@@ -204,6 +204,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
               },
             ),
       floatingActionButton: FloatingActionButton.extended(
+        foregroundColor: Colors.white,
         onPressed: _openAddDialog,
         backgroundColor: AppColors.navy,
         icon: const Icon(Icons.add_rounded),
