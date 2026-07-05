@@ -4,6 +4,7 @@ import '../models/employee.dart';
 import '../providers/session_provider.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
+import 'dashboard_screen.dart';
 import 'pos_screen.dart';
 import 'reports_screen.dart';
 import 'stock_screen.dart';
@@ -32,21 +33,27 @@ class _MainShellState extends State<MainShell> {
     if (mounted) setState(() => _lowStockCount = count);
   }
 
+  void _navigateTo(int index) {
+    setState(() => _index = index);
+    if (index == 2) _loadLowStockCount();
+  }
+
   @override
   Widget build(BuildContext context) {
     final session = context.watch<SessionProvider>();
     final role = session.currentEmployee?.role ?? EmployeeRole.caissier;
     final isCashierOnly = role == EmployeeRole.caissier;
 
-    // Un caissier n'a accès qu'au module Vente.
+    // Un caissier n'a accès qu'au module Vente, sans tableau de bord.
     if (isCashierOnly) {
       return const PosScreen();
     }
 
-    final screens = const [
-      PosScreen(),
-      StockScreen(),
-      ReportsScreen(),
+    final screens = [
+      DashboardScreen(onNavigate: _navigateTo),
+      const PosScreen(),
+      const StockScreen(),
+      const ReportsScreen(),
     ];
 
     return Scaffold(
@@ -65,13 +72,15 @@ class _MainShellState extends State<MainShell> {
         ),
         child: NavigationBar(
           selectedIndex: _index,
-          onDestinationSelected: (i) {
-            setState(() => _index = i);
-            if (i == 1) _loadLowStockCount();
-          },
+          onDestinationSelected: _navigateTo,
           backgroundColor: Colors.white,
           height: 62,
           destinations: [
+            const NavigationDestination(
+              icon: Icon(Icons.dashboard_outlined, color: AppColors.textSecondary),
+              selectedIcon: Icon(Icons.dashboard_rounded, color: AppColors.navy),
+              label: 'Accueil',
+            ),
             const NavigationDestination(
               icon: Icon(Icons.point_of_sale_outlined, color: AppColors.textSecondary),
               selectedIcon: Icon(Icons.point_of_sale_rounded, color: AppColors.navy),

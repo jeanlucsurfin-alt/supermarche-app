@@ -940,6 +940,17 @@ class DatabaseService {
     return EmployeeShift.fromMap(maps.first);
   }
 
+  /// Tous les employés actuellement en service (pointage sans départ).
+  Future<List<EmployeeShift>> getActiveShifts() async {
+    final db = await database;
+    final maps = await db.query(
+      'employee_shifts',
+      where: 'clockOut IS NULL',
+      orderBy: 'clockIn DESC',
+    );
+    return maps.map((m) => EmployeeShift.fromMap(m)).toList();
+  }
+
   Future<List<EmployeeShift>> getShiftsForEmployee(int employeeId) async {
     final db = await database;
     final maps = await db.query(
