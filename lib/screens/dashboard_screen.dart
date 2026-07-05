@@ -21,6 +21,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _todayTransactions = 0;
   int _lowStockCount = 0;
   double _outstandingCredit = 0;
+  double _todayExpenses = 0;
+  double _todayNetProfit = 0;
   List<EmployeeShift> _activeShifts = [];
 
   final _currencyFormat =
@@ -47,6 +49,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _todayTransactions = (summary['transactionCount'] ?? 0).toInt();
       _lowStockCount = products.where((p) => p.isLowStock).length;
       _outstandingCredit = outstanding;
+      _todayExpenses = summary['totalExpenses'] ?? 0;
+      _todayNetProfit = summary['netProfit'] ?? 0;
       _activeShifts = shifts;
       _loading = false;
     });
@@ -119,6 +123,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           value: '${_activeShifts.length}',
                           subLabel: 'employé(s)',
                           color: AppColors.success,
+                          onTap: () => widget.onNavigate(3),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _DashboardCard(
+                          icon: Icons.money_off_rounded,
+                          label: 'Dépenses du jour',
+                          value: _currencyFormat.format(_todayExpenses),
+                          subLabel: 'aujourd\'hui',
+                          color: AppColors.danger,
+                          onTap: () => widget.onNavigate(3),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _DashboardCard(
+                          icon: Icons.account_balance_wallet_rounded,
+                          label: 'Bénéfice net du jour',
+                          value: _currencyFormat.format(_todayNetProfit),
+                          subLabel: 'ventes - dépenses',
+                          color: _todayNetProfit >= 0
+                              ? AppColors.success
+                              : AppColors.danger,
                           onTap: () => widget.onNavigate(3),
                         ),
                       ),
