@@ -119,7 +119,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           value: '${_activeShifts.length}',
                           subLabel: 'employé(s)',
                           color: AppColors.success,
-                          onTap: () => widget.onNavigate(2),
+                          onTap: () => widget.onNavigate(3),
                         ),
                       ),
                     ],
