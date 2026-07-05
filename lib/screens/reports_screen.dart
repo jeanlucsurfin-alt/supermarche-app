@@ -15,6 +15,7 @@ import 'customers_screen.dart';
 import 'employees_screen.dart';
 import 'cash_closing_screen.dart';
 import 'returns_screen.dart';
+import 'expenses_screen.dart';
 import 'settings_screen.dart';
 
 enum ReportPeriod { today, week, month, custom }
@@ -41,6 +42,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
     'pendingCreditAmount': 0,
     'returnsTotal': 0,
     'netRevenue': 0,
+    'totalExpenses': 0,
+    'netProfit': 0,
     'averageBasket': 0,
   };
   List<Map<String, dynamic>> _topProducts = [];
@@ -211,6 +214,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 case 'retours':
                   screen = const ReturnsScreen();
                   break;
+                case 'depenses':
+                  screen = const ExpensesScreen();
+                  break;
               }
               if (screen != null) {
                 await Navigator.push(
@@ -278,6 +284,16 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     Icon(Icons.undo_rounded, size: 18),
                     SizedBox(width: 10),
                     Text('Retours'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'depenses',
+                child: Row(
+                  children: [
+                    Icon(Icons.trending_down_rounded, size: 18),
+                    SizedBox(width: 10),
+                    Text('Dépenses'),
                   ],
                 ),
               ),
@@ -476,6 +492,18 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     label: 'Retours (période)',
                     value: '- ${_currencyFormat.format(_summary['returnsTotal'])}',
                     color: AppColors.danger,
+                  ),
+                  _StatCard(
+                    icon: Icons.money_off_rounded,
+                    label: 'Dépenses (période)',
+                    value: '- ${_currencyFormat.format(_summary['totalExpenses'])}',
+                    color: AppColors.danger,
+                  ),
+                  _StatCard(
+                    icon: Icons.account_balance_wallet_rounded,
+                    label: 'Bénéfice net',
+                    value: _currencyFormat.format(_summary['netProfit']),
+                    color: AppColors.success,
                   ),
                 ],
               ),

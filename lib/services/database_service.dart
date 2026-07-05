@@ -12,6 +12,7 @@ import '../models/credit_payment.dart';
 import '../models/cash_closing.dart';
 import '../models/sale_return.dart';
 import '../models/purchase_order.dart';
+import '../models/expense.dart';
 
 class DatabaseService {
   static final DatabaseService _instance = DatabaseService._internal();
@@ -29,7 +30,7 @@ class DatabaseService {
     final path = join(await getDatabasesPath(), 'fafoutt_store.db');
     return await openDatabase(
       path,
-      version: 12,
+      version: 13,
       onCreate: _onCreate,
       onUpgrade: (db, oldVersion, newVersion) async {
         await db.execute('DROP TABLE IF EXISTS sale_items');
@@ -48,6 +49,7 @@ class DatabaseService {
         await db.execute('DROP TABLE IF EXISTS sale_return_items');
         await db.execute('DROP TABLE IF EXISTS purchase_orders');
         await db.execute('DROP TABLE IF EXISTS purchase_order_items');
+        await db.execute('DROP TABLE IF EXISTS expenses');
         await _onCreate(db, newVersion);
       },
     );
@@ -163,6 +165,16 @@ class DatabaseService {
         quantityOrdered INTEGER NOT NULL,
         quantityReceived INTEGER NOT NULL DEFAULT 0,
         unitPrice REAL NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE expenses(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        category TEXT NOT NULL,
+        amount REAL NOT NULL,
+        date TEXT NOT NULL,
+        note TEXT
       )
     ''');
 
@@ -626,6 +638,7 @@ class DatabaseService {
     }
 
     final returnsTotal = await getTotalReturns(start, end);
+    final totalExpenses = await getTotalExpenses(start, end);
 
     return {
       'transactionCount': transactionCount,
@@ -637,6 +650,8 @@ class DatabaseService {
       'averageBasket': transactionCount > 0 ? revenue / transactionCount : 0,
       'returnsTotal': returnsTotal,
       'netRevenue': revenue - returnsTotal,
+      'totalExpenses': totalExpenses,
+      'netProfit': realizedProfit - totalExpenses,
     };
   }
 
@@ -1236,5 +1251,39 @@ class DatabaseService {
         whereArgs: [orderId],
       );
     });
+  }
+
+  // ---- DÉPENSES DU MAGASIN ----
+
+  Future<int> insertExpense(Expense expense) async {
+    final db = await database;
+    return await db.insert('expenses', expense.toMap()..remove('id'));
+  }
+
+  Future<void> deleteExpense(int id) async {
+    final db = await database;
+    await db.delete('expenses', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<List<Expense>> getExpensesInRange(
+      DateTime start, DateTime end) async {
+    final db = await database;
+    final maps = await db.query(
+      'expenses',
+      where: 'date BETWEEN ? AND ?',
+      whereArgs: [start.toIso8601String(), end.toIso8601String()],
+      orderBy: 'date DESC',
+    );
+    return maps.map((m) => Expense.fromMap(m)).toList();
+  }
+
+  Future<double> getTotalExpenses(DateTime start, DateTime end) async {
+    final db = await database;
+    final result = await db.rawQuery('''
+      SELECT COALESCE(SUM(amount), 0) as total
+      FROM expenses
+      WHERE date BETWEEN ? AND ?
+    ''', [start.toIso8601String(), end.toIso8601String()]);
+    return (result.first['total'] as num?)?.toDouble() ?? 0;
   }
 }
