@@ -189,9 +189,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: FafouttHeader(
+        title: const FafouttHeader(
           subtitle: 'Rapports de ventes',
-          onTap: () => showMainMenu(context),
+          enableMenu: true,
         ),
         actions: [
           PopupMenuButton<String>(

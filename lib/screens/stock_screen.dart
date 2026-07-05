@@ -78,7 +78,7 @@ class _StockScreenState extends State<StockScreen> {
       appBar: AppBar(
         title: FafouttHeader(
           subtitle: tr(lang, 'stock_subtitle'),
-          onTap: () => showMainMenu(context),
+          enableMenu: true,
         ),
         actions: [
           PopupMenuButton<String>(

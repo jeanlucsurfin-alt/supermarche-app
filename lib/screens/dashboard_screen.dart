@@ -74,9 +74,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: FafouttHeader(
+        title: const FafouttHeader(
           subtitle: 'Tableau de bord',
-          onTap: () => showMainMenu(context),
+          enableMenu: true,
         ),
       ),
       body: _loading

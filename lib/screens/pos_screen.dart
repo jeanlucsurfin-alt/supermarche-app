@@ -121,7 +121,7 @@ class _PosScreenState extends State<PosScreen> {
       appBar: AppBar(
         title: FafouttHeader(
           subtitle: tr(lang, 'pos_subtitle'),
-          onTap: () => showMainMenu(context),
+          enableMenu: true,
         ),
         actions: [
           Padding(

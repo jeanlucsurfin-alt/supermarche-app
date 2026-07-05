@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
+import 'main_menu_sheet.dart';
 
 /// Monogramme "F" de Fafoutt Store — cercle marine avec liseré or.
 class FafouttLogo extends StatelessWidget {
@@ -32,17 +33,30 @@ class FafouttLogo extends StatelessWidget {
 }
 
 /// Bandeau titre avec logo + nom du magasin, utilisé en en-tête d'écran.
-/// Si [onTap] est fourni, le logo devient cliquable (menu principal).
-class FafouttHeader extends StatelessWidget {
+/// Si [enableMenu] est activé, toucher le logo ouvre le menu principal
+/// juste en-dessous (gestion + déconnexion).
+class FafouttHeader extends StatefulWidget {
   final String subtitle;
-  final VoidCallback? onTap;
-  const FafouttHeader({super.key, this.subtitle = 'Point de Vente', this.onTap});
+  final bool enableMenu;
+  const FafouttHeader({
+    super.key,
+    this.subtitle = 'Point de Vente',
+    this.enableMenu = false,
+  });
+
+  @override
+  State<FafouttHeader> createState() => _FafouttHeaderState();
+}
+
+class _FafouttHeaderState extends State<FafouttHeader> {
+  final GlobalKey _anchorKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
     final content = Row(
+      key: _anchorKey,
       children: [
-        FafouttLogo(size: 34),
+        const FafouttLogo(size: 34),
         const SizedBox(width: 10),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -58,7 +72,7 @@ class FafouttHeader extends StatelessWidget {
               ),
             ),
             Text(
-              subtitle,
+              widget.subtitle,
               style: GoogleFonts.inter(
                 fontSize: 11,
                 color: Colors.white70,
@@ -70,11 +84,11 @@ class FafouttHeader extends StatelessWidget {
       ],
     );
 
-    if (onTap == null) return content;
+    if (!widget.enableMenu) return content;
 
     return InkWell(
       borderRadius: BorderRadius.circular(24),
-      onTap: onTap,
+      onTap: () => showMainMenu(_anchorKey),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: content,

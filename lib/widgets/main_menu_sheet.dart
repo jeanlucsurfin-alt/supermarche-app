@@ -11,72 +11,49 @@ import '../screens/returns_screen.dart';
 import '../screens/expenses_screen.dart';
 import '../screens/activity_log_screen.dart';
 
-/// Ouvre le menu principal (gestion + déconnexion), accessible en touchant
-/// le logo "F" de Fafoutt Store dans l'en-tête des écrans principaux.
-Future<void> showMainMenu(BuildContext context) async {
-  final value = await showModalBottomSheet<String>(
-    context: context,
-    backgroundColor: Colors.white,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
-    builder: (context) => SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 40,
-            height: 4,
-            margin: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFE3E6EC),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const _MenuTile(
-              icon: Icons.badge_outlined, label: 'Employés', value: 'employes'),
-          const _MenuTile(
-              icon: Icons.people_outline_rounded,
-              label: 'Clients',
-              value: 'clients'),
-          const _MenuTile(
-              icon: Icons.schedule_rounded,
-              label: 'Créances',
-              value: 'creances'),
-          const _MenuTile(
-              icon: Icons.settings_outlined,
-              label: 'Paramètres',
-              value: 'parametres'),
-          const _MenuTile(
-              icon: Icons.point_of_sale_rounded,
-              label: 'Clôture de caisse',
-              value: 'cloture'),
-          const _MenuTile(
-              icon: Icons.undo_rounded, label: 'Retours', value: 'retours'),
-          const _MenuTile(
-              icon: Icons.trending_down_rounded,
-              label: 'Dépenses',
-              value: 'depenses'),
-          const _MenuTile(
-              icon: Icons.history_rounded,
-              label: 'Journal d\'activité',
-              value: 'journal'),
-          const Divider(height: 16),
-          const _MenuTile(
-              icon: Icons.logout_rounded,
-              label: 'Déconnexion',
-              value: 'logout',
-              color: AppColors.danger),
-          const SizedBox(height: 8),
-        ],
-      ),
-    ),
+/// Ouvre le menu principal (gestion + déconnexion) juste en-dessous du
+/// widget identifié par [anchorKey] — typiquement le logo "F" de l'en-tête.
+Future<void> showMainMenu(GlobalKey anchorKey) async {
+  final anchorContext = anchorKey.currentContext;
+  if (anchorContext == null) return;
+
+  final RenderBox anchorBox = anchorContext.findRenderObject() as RenderBox;
+  final overlay =
+      Overlay.of(anchorContext).context.findRenderObject() as RenderBox;
+
+  final topLeft =
+      anchorBox.localToGlobal(Offset(0, anchorBox.size.height + 8), ancestor: overlay);
+  final bottomRight =
+      anchorBox.localToGlobal(anchorBox.size.bottomRight(Offset.zero), ancestor: overlay);
+
+  final position = RelativeRect.fromRect(
+    Rect.fromPoints(topLeft, bottomRight),
+    Offset.zero & overlay.size,
   );
 
-  if (value == null || !context.mounted) return;
+  final value = await showMenu<String>(
+    context: anchorContext,
+    position: position,
+    color: Colors.white,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+    items: [
+      _item(Icons.badge_outlined, 'Employés', 'employes'),
+      _item(Icons.people_outline_rounded, 'Clients', 'clients'),
+      _item(Icons.schedule_rounded, 'Créances', 'creances'),
+      _item(Icons.settings_outlined, 'Paramètres', 'parametres'),
+      _item(Icons.point_of_sale_rounded, 'Clôture de caisse', 'cloture'),
+      _item(Icons.undo_rounded, 'Retours', 'retours'),
+      _item(Icons.trending_down_rounded, 'Dépenses', 'depenses'),
+      _item(Icons.history_rounded, 'Journal d\'activité', 'journal'),
+      const PopupMenuDivider(height: 8),
+      _item(Icons.logout_rounded, 'Déconnexion', 'logout', color: AppColors.danger),
+    ],
+  );
+
+  if (value == null || !anchorContext.mounted) return;
 
   if (value == 'logout') {
-    await _confirmLogout(context);
+    await _confirmLogout(anchorContext);
     return;
   }
 
@@ -108,12 +85,27 @@ Future<void> showMainMenu(BuildContext context) async {
       break;
   }
 
-  if (screen != null && context.mounted) {
+  if (screen != null && anchorContext.mounted) {
     await Navigator.push(
-      context,
+      anchorContext,
       MaterialPageRoute(builder: (_) => screen!),
     );
   }
+}
+
+PopupMenuItem<String> _item(IconData icon, String label, String value,
+    {Color? color}) {
+  return PopupMenuItem(
+    value: value,
+    child: Row(
+      children: [
+        Icon(icon, size: 18, color: color ?? AppColors.navy),
+        const SizedBox(width: 10),
+        Text(label,
+            style: TextStyle(fontWeight: FontWeight.w600, color: color)),
+      ],
+    ),
+  );
 }
 
 Future<void> _confirmLogout(BuildContext context) async {
@@ -139,29 +131,5 @@ Future<void> _confirmLogout(BuildContext context) async {
   );
   if (confirm == true) {
     await session.logout();
-  }
-}
-
-class _MenuTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color? color;
-
-  const _MenuTile({
-    required this.icon,
-    required this.label,
-    required this.value,
-    this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(icon, color: color ?? AppColors.navy, size: 20),
-      title: Text(label,
-          style: TextStyle(fontWeight: FontWeight.w600, color: color)),
-      onTap: () => Navigator.pop(context, value),
-    );
   }
 }
