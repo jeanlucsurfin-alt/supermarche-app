@@ -5,6 +5,8 @@ import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/fafoutt_logo.dart';
 import '../widgets/main_menu_sheet.dart';
+import 'employees_screen.dart';
+import 'credit_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   final ValueChanged<int> onNavigate;
@@ -128,7 +130,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           value: _currencyFormat.format(_outstandingCredit),
                           subLabel: 'toutes périodes',
                           color: AppColors.danger,
-                          onTap: () => widget.onNavigate(3),
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const CreditScreen()),
+                          ).then((_) => _load()),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -139,7 +144,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           value: '${_activeShifts.length}',
                           subLabel: 'employé(s)',
                           color: AppColors.success,
-                          onTap: () => widget.onNavigate(3),
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const EmployeesScreen()),
+                          ).then((_) => _load()),
                         ),
                       ),
                     ],
