@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'package:path_provider/path_provider.dart';
 import '../models/product.dart';
 import '../models/sale.dart';
 import '../models/supplier.dart';
@@ -1395,5 +1397,77 @@ class DatabaseService {
     final maps =
         await db.query('activity_logs', orderBy: 'date DESC', limit: limit);
     return maps.map((m) => ActivityLog.fromMap(m)).toList();
+  }
+
+  // ---- SAUVEGARDE AUTOMATIQUE PROGRAMMÉE ----
+
+  Future<Directory> _autoBackupDirectory() async {
+    final docsDir = await getApplicationDocumentsDirectory();
+    final backupDir = Directory(join(docsDir.path, 'fafoutt_auto_backups'));
+    if (!await backupDir.exists()) {
+      await backupDir.create(recursive: true);
+    }
+    return backupDir;
+  }
+
+  /// Vérifie si une sauvegarde automatique est due (selon la fréquence
+  /// choisie dans les paramètres) et l'exécute le cas échéant. Conserve
+  /// uniquement les 5 sauvegardes automatiques les plus récentes.
+  /// Retourne true si une sauvegarde a été créée.
+  Future<bool> performAutoBackupIfDue() async {
+    final enabled = await getSetting('autoBackupEnabled');
+    if (enabled != 'true') return false;
+
+    final frequency = await getSetting('autoBackupFrequency') ?? 'daily';
+    final lastBackupStr = await getSetting('lastAutoBackupDate');
+    final now = DateTime.now();
+
+    if (lastBackupStr != null && lastBackupStr.isNotEmpty) {
+      final lastBackup = DateTime.tryParse(lastBackupStr);
+      if (lastBackup != null) {
+        final threshold = frequency == 'weekly'
+            ? const Duration(days: 7)
+            : const Duration(days: 1);
+        if (now.difference(lastBackup) < threshold) return false;
+      }
+    }
+
+    try {
+      final dbPath = await getDatabasePath();
+      final dbFile = File(dbPath);
+      if (!await dbFile.exists()) return false;
+
+      final backupDir = await _autoBackupDirectory();
+      final fileName =
+          'auto_${now.toIso8601String().replaceAll(':', '-')}.db';
+      await dbFile.copy(join(backupDir.path, fileName));
+
+      // Ne garder que les 5 sauvegardes automatiques les plus récentes.
+      final files = backupDir
+          .listSync()
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.db'))
+          .toList()
+        ..sort((a, b) => b.path.compareTo(a.path));
+      for (final file in files.skip(5)) {
+        await file.delete();
+      }
+
+      await setSetting('lastAutoBackupDate', now.toIso8601String());
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<List<File>> getAutoBackupFiles() async {
+    final backupDir = await _autoBackupDirectory();
+    final files = backupDir
+        .listSync()
+        .whereType<File>()
+        .where((f) => f.path.endsWith('.db'))
+        .toList()
+      ..sort((a, b) => b.path.compareTo(a.path));
+    return files;
   }
 }

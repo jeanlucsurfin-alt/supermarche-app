@@ -23,6 +23,7 @@ class _MainShellState extends State<MainShell> {
   void initState() {
     super.initState();
     _loadLowStockCount();
+    DatabaseService().performAutoBackupIfDue();
   }
 
   Future<void> _loadLowStockCount() async {

@@ -25,6 +25,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late TextEditingController _exchangeRateController;
   bool _loyaltyEnabled = true;
   DateTime? _lastBackupDate;
+  bool _autoBackupEnabled = false;
+  String _autoBackupFrequency = 'daily';
+  DateTime? _lastAutoBackupDate;
 
   @override
   void initState() {
@@ -49,8 +52,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
           (lastBackup != null && lastBackup.isNotEmpty)
               ? DateTime.tryParse(lastBackup)
               : null;
+      _autoBackupEnabled = (settings['autoBackupEnabled'] ?? 'false') == 'true';
+      _autoBackupFrequency = settings['autoBackupFrequency'] ?? 'daily';
+      final lastAuto = settings['lastAutoBackupDate'];
+      _lastAutoBackupDate =
+          (lastAuto != null && lastAuto.isNotEmpty)
+              ? DateTime.tryParse(lastAuto)
+              : null;
       _loading = false;
     });
+  }
+
+  Future<void> _toggleAutoBackup(bool value) async {
+    setState(() => _autoBackupEnabled = value);
+    await _db.setSetting('autoBackupEnabled', value.toString());
+    if (value) {
+      final created = await _db.performAutoBackupIfDue();
+      if (created && mounted) {
+        _load();
+      }
+    }
+  }
+
+  Future<void> _setAutoBackupFrequency(String frequency) async {
+    setState(() => _autoBackupFrequency = frequency);
+    await _db.setSetting('autoBackupFrequency', frequency);
   }
 
   Future<void> _saveSettings() async {
@@ -308,6 +334,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     label: const Text('RESTAURER UNE SAUVEGARDE'),
                   ),
                 ),
+                const SizedBox(height: 32),
+                Text('Sauvegarde automatique',
+                    style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 4),
+                Text(
+                  'Se déclenche automatiquement à l\'ouverture de l\'app si une sauvegarde est due (garde les 5 dernières).',
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Activer la sauvegarde automatique'),
+                  value: _autoBackupEnabled,
+                  activeColor: AppColors.navy,
+                  onChanged: _toggleAutoBackup,
+                ),
+                if (_autoBackupEnabled) ...[
+                  const SizedBox(height: 4),
+                  SegmentedButton<String>(
+                    segments: const [
+                      ButtonSegment(value: 'daily', label: Text('Quotidienne')),
+                      ButtonSegment(value: 'weekly', label: Text('Hebdomadaire')),
+                    ],
+                    selected: {_autoBackupFrequency},
+                    onSelectionChanged: (s) => _setAutoBackupFrequency(s.first),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _lastAutoBackupDate != null
+                        ? 'Dernière sauvegarde automatique : ${DateFormat('dd/MM/yyyy à HH:mm').format(_lastAutoBackupDate!)}'
+                        : 'Aucune sauvegarde automatique effectuée pour le moment',
+                    style: const TextStyle(
+                        color: AppColors.textSecondary, fontSize: 12),
+                  ),
+                ],
                 const SizedBox(height: 20),
               ],
             ),
