@@ -5,6 +5,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../providers/cart_provider.dart';
+import '../services/bluetooth_printer_service.dart';
 import '../services/database_service.dart';
 import '../models/sale.dart';
 import '../models/customer.dart';
@@ -298,6 +299,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     await _db.insertSale(sale);
     await _generateReceipt(sale);
+
+    if (await BluetoothPrinterService().hasSavedPrinter()) {
+      final printed = await BluetoothPrinterService().printReceipt(sale);
+      if (mounted && !printed) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Impossible d\'imprimer sur l\'imprimante Bluetooth (reçu PDF disponible)'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    }
 
     cart.clear();
     if (!mounted) return;

@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart' show Share, XFile;
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
+import 'printer_settings_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -368,6 +369,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         color: AppColors.textSecondary, fontSize: 12),
                   ),
                 ],
+                const SizedBox(height: 32),
+                Text('Impression', style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 4),
+                Text(
+                  'Configurez une imprimante thermique Bluetooth pour imprimer directement les reçus.',
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const PrinterSettingsScreen()),
+                      );
+                    },
+                    icon: const Icon(Icons.print_outlined, size: 18),
+                    label: const Text('CONFIGURER L\'IMPRIMANTE BLUETOOTH'),
+                  ),
+                ),
                 const SizedBox(height: 20),
               ],
             ),

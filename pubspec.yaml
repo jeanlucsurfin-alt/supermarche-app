@@ -36,6 +36,9 @@ dependencies:
   # Icônes et UI
   google_fonts: ^6.1.0
 
+  # Impression thermique Bluetooth
+  blue_thermal_printer: ^1.2.4
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
