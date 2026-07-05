@@ -19,6 +19,7 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _index = 0;
   int _lowStockCount = 0;
+  int _dashboardRefreshCounter = 0;
 
   @override
   void initState() {
@@ -34,7 +35,10 @@ class _MainShellState extends State<MainShell> {
   }
 
   void _navigateTo(int index) {
-    setState(() => _index = index);
+    setState(() {
+      _index = index;
+      if (index == 0) _dashboardRefreshCounter++;
+    });
     if (index == 2) _loadLowStockCount();
   }
 
@@ -50,7 +54,10 @@ class _MainShellState extends State<MainShell> {
     }
 
     final screens = [
-      DashboardScreen(onNavigate: _navigateTo),
+      DashboardScreen(
+        onNavigate: _navigateTo,
+        refreshTrigger: _dashboardRefreshCounter,
+      ),
       const PosScreen(),
       const StockScreen(),
       const ReportsScreen(),

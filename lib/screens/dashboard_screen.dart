@@ -8,7 +8,12 @@ import '../widgets/logout_button.dart';
 
 class DashboardScreen extends StatefulWidget {
   final ValueChanged<int> onNavigate;
-  const DashboardScreen({super.key, required this.onNavigate});
+  final int refreshTrigger;
+  const DashboardScreen({
+    super.key,
+    required this.onNavigate,
+    this.refreshTrigger = 0,
+  });
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -32,6 +37,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void didUpdateWidget(DashboardScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Recharge les données à chaque fois qu'on revient sur cet onglet.
+    if (widget.refreshTrigger != oldWidget.refreshTrigger) {
+      _load();
+    }
   }
 
   Future<void> _load() async {
