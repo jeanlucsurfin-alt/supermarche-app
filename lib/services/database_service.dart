@@ -13,6 +13,7 @@ import '../models/cash_closing.dart';
 import '../models/sale_return.dart';
 import '../models/purchase_order.dart';
 import '../models/expense.dart';
+import '../models/promotion.dart';
 
 class DatabaseService {
   static final DatabaseService _instance = DatabaseService._internal();
@@ -30,7 +31,7 @@ class DatabaseService {
     final path = join(await getDatabasesPath(), 'fafoutt_store.db');
     return await openDatabase(
       path,
-      version: 13,
+      version: 14,
       onCreate: _onCreate,
       onUpgrade: (db, oldVersion, newVersion) async {
         await db.execute('DROP TABLE IF EXISTS sale_items');
@@ -50,6 +51,7 @@ class DatabaseService {
         await db.execute('DROP TABLE IF EXISTS purchase_orders');
         await db.execute('DROP TABLE IF EXISTS purchase_order_items');
         await db.execute('DROP TABLE IF EXISTS expenses');
+        await db.execute('DROP TABLE IF EXISTS promotions');
         await _onCreate(db, newVersion);
       },
     );
@@ -81,7 +83,9 @@ class DatabaseService {
         total REAL NOT NULL,
         cashierName TEXT,
         customerId INTEGER,
-        currency TEXT NOT NULL DEFAULT 'HTG'
+        currency TEXT NOT NULL DEFAULT 'HTG',
+        discountAmount REAL NOT NULL DEFAULT 0,
+        promoCode TEXT
       )
     ''');
 
@@ -175,6 +179,22 @@ class DatabaseService {
         amount REAL NOT NULL,
         date TEXT NOT NULL,
         note TEXT
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE promotions(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        discountType TEXT NOT NULL,
+        discountValue REAL NOT NULL,
+        scope TEXT NOT NULL,
+        targetProductId INTEGER,
+        targetProductName TEXT,
+        targetCategory TEXT,
+        promoCode TEXT,
+        startDate TEXT NOT NULL,
+        endDate TEXT NOT NULL
       )
     ''');
 
@@ -1285,5 +1305,57 @@ class DatabaseService {
       WHERE date BETWEEN ? AND ?
     ''', [start.toIso8601String(), end.toIso8601String()]);
     return (result.first['total'] as num?)?.toDouble() ?? 0;
+  }
+
+  // ---- PROMOTIONS ET RÉDUCTIONS ----
+
+  Future<int> insertPromotion(Promotion promotion) async {
+    final db = await database;
+    return await db.insert('promotions', promotion.toMap()..remove('id'));
+  }
+
+  Future<void> deletePromotion(int id) async {
+    final db = await database;
+    await db.delete('promotions', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<List<Promotion>> getAllPromotions() async {
+    final db = await database;
+    final maps = await db.query('promotions', orderBy: 'startDate DESC');
+    return maps.map((m) => Promotion.fromMap(m)).toList();
+  }
+
+  /// Renvoie la promotion active applicable à un produit donné (priorité
+  /// à une promo sur le produit précis, sinon sur sa catégorie), ou null.
+  Future<Promotion?> getActivePromotionForProduct(
+      int productId, String category) async {
+    final all = await getAllPromotions();
+    final now = DateTime.now();
+    final productMatch = all.where((p) =>
+        p.scope == PromotionScope.product &&
+        p.targetProductId == productId &&
+        p.isActiveOn(now));
+    if (productMatch.isNotEmpty) return productMatch.first;
+
+    final categoryMatch = all.where((p) =>
+        p.scope == PromotionScope.category &&
+        p.targetCategory == category &&
+        p.isActiveOn(now));
+    if (categoryMatch.isNotEmpty) return categoryMatch.first;
+
+    return null;
+  }
+
+  /// Recherche un code promo actif (insensible à la casse).
+  Future<Promotion?> findPromoByCode(String code) async {
+    final all = await getAllPromotions();
+    final now = DateTime.now();
+    final match = all.where((p) =>
+        p.scope == PromotionScope.cart &&
+        p.promoCode != null &&
+        p.promoCode!.toLowerCase() == code.toLowerCase().trim() &&
+        p.isActiveOn(now));
+    if (match.isEmpty) return null;
+    return match.first;
   }
 }

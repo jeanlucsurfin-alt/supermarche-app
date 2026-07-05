@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/product.dart';
+import '../models/promotion.dart';
 import '../providers/cart_provider.dart';
 import '../providers/category_provider.dart';
 import '../services/database_service.dart';
@@ -25,6 +26,7 @@ class _PosScreenState extends State<PosScreen> {
   List<Product> _filteredProducts = [];
   String _selectedCategory = 'Tout';
   final TextEditingController _searchController = TextEditingController();
+  final Map<int, Promotion> _activePromotions = {};
 
   @override
   void initState() {
@@ -34,10 +36,34 @@ class _PosScreenState extends State<PosScreen> {
 
   Future<void> _loadProducts() async {
     final products = await _db.getAllProducts();
+    final promotions = <int, Promotion>{};
+    for (final product in products) {
+      final promo =
+          await _db.getActivePromotionForProduct(product.id!, product.category);
+      if (promo != null) promotions[product.id!] = promo;
+    }
     setState(() {
       _products = products;
+      _activePromotions
+        ..clear()
+        ..addAll(promotions);
       _applyFilters();
     });
+  }
+
+  double _priceFor(Product product) {
+    final base = product.priceFor(context.read<CartProvider>().currency);
+    final promo = _activePromotions[product.id];
+    if (promo == null) return base;
+    // Les promotions par pourcentage s'appliquent quelle que soit la
+    // devise ; les montants fixes sont exprimés en HTG (limitation connue
+    // en devise USD).
+    if (promo.discountType == DiscountType.percentage) {
+      return promo.applyTo(base);
+    }
+    return context.read<CartProvider>().currency == 'HTG'
+        ? promo.applyTo(base)
+        : base;
   }
 
   List<String> get _categories {
@@ -80,7 +106,9 @@ class _PosScreenState extends State<PosScreen> {
       return;
     }
     if (!mounted) return;
-    context.read<CartProvider>().addProduct(product);
+    context
+        .read<CartProvider>()
+        .addProduct(product, unitPriceOverride: _priceFor(product));
   }
 
   @override
@@ -236,9 +264,10 @@ class _PosScreenState extends State<PosScreen> {
                               return _ProductCard(
                                 product: product,
                                 currency: cart.currency,
-                                onTap: () => context
-                                    .read<CartProvider>()
-                                    .addProduct(product),
+                                promotion: _activePromotions[product.id],
+                                onTap: () => context.read<CartProvider>().addProduct(
+                                    product,
+                                    unitPriceOverride: _priceFor(product)),
                               );
                             },
                           );
@@ -549,9 +578,9 @@ class _CartPanel extends StatelessWidget {
                                     onTap: () {
                                       final product = products.firstWhere(
                                           (p) => p.id == item.productId);
-                                      context
-                                          .read<CartProvider>()
-                                          .addProduct(product);
+                                      context.read<CartProvider>().addProduct(
+                                          product,
+                                          unitPriceOverride: item.unitPrice);
                                     },
                                   ),
                                 ],
@@ -618,13 +647,28 @@ class _CartPanel extends StatelessWidget {
 class _ProductCard extends StatelessWidget {
   final Product product;
   final String currency;
+  final Promotion? promotion;
   final VoidCallback onTap;
 
   const _ProductCard({
     required this.product,
     required this.currency,
+    this.promotion,
     required this.onTap,
   });
+
+  double get _basePrice => product.priceFor(currency);
+
+  double get _discountedPrice {
+    if (promotion == null) return _basePrice;
+    if (promotion!.discountType == DiscountType.percentage) {
+      return promotion!.applyTo(_basePrice);
+    }
+    // Les remises en montant fixe sont exprimées en HTG.
+    return currency == 'HTG' ? promotion!.applyTo(_basePrice) : _basePrice;
+  }
+
+  bool get _hasDiscount => promotion != null && _discountedPrice < _basePrice;
 
   @override
   Widget build(BuildContext context) {
@@ -640,15 +684,35 @@ class _ProductCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: catColor.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                alignment: Alignment.center,
-                child: Icon(catIcon, color: catColor, size: 18),
+              Row(
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: catColor.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(catIcon, color: catColor, size: 18),
+                  ),
+                  if (_hasDiscount) ...[
+                    const Spacer(),
+                    Container(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.danger,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Text('PROMO',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 9)),
+                    ),
+                  ],
+                ],
               ),
               const Spacer(),
               Text(
@@ -659,14 +723,28 @@ class _ProductCard extends StatelessWidget {
                     fontWeight: FontWeight.w600, fontSize: 12.5, height: 1.2),
               ),
               const SizedBox(height: 4),
+              if (_hasDiscount)
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    formatPrice(_basePrice, currency),
+                    maxLines: 1,
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 11,
+                      decoration: TextDecoration.lineThrough,
+                    ),
+                  ),
+                ),
               FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  formatPrice(product.priceFor(currency), currency),
+                  formatPrice(_discountedPrice, currency),
                   maxLines: 1,
-                  style: const TextStyle(
-                    color: AppColors.gold,
+                  style: TextStyle(
+                    color: _hasDiscount ? AppColors.danger : AppColors.gold,
                     fontWeight: FontWeight.w700,
                     fontSize: 13,
                   ),

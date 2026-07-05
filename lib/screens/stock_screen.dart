@@ -11,6 +11,7 @@ import '../widgets/fafoutt_logo.dart';
 import '../widgets/logout_button.dart';
 import 'categories_screen.dart';
 import 'products_screen.dart';
+import 'promotions_screen.dart';
 import 'suppliers_screen.dart';
 
 class StockScreen extends StatefulWidget {
@@ -89,6 +90,9 @@ class _StockScreenState extends State<StockScreen> {
                 case 'fournisseurs':
                   screen = const SuppliersScreen();
                   break;
+                case 'promotions':
+                  screen = const PromotionsScreen();
+                  break;
               }
               if (screen != null) {
                 await Navigator.push(
@@ -129,6 +133,16 @@ class _StockScreenState extends State<StockScreen> {
                     Icon(Icons.local_shipping_outlined, size: 18),
                     SizedBox(width: 10),
                     Text('Fournisseurs'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'promotions',
+                child: Row(
+                  children: [
+                    Icon(Icons.local_offer_outlined, size: 18),
+                    SizedBox(width: 10),
+                    Text('Promotions'),
                   ],
                 ),
               ),

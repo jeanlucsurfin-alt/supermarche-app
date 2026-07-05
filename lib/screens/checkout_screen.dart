@@ -8,6 +8,7 @@ import '../providers/cart_provider.dart';
 import '../services/database_service.dart';
 import '../models/sale.dart';
 import '../models/customer.dart';
+import '../models/promotion.dart';
 import '../utils/currency.dart';
 import '../theme/app_theme.dart';
 
@@ -21,10 +22,14 @@ class CheckoutScreen extends StatefulWidget {
 class _CheckoutScreenState extends State<CheckoutScreen> {
   PaymentMethod _selectedMethod = PaymentMethod.cash;
   final TextEditingController _amountController = TextEditingController();
+  final TextEditingController _promoCodeController = TextEditingController();
   final DatabaseService _db = DatabaseService();
   bool _isProcessing = false;
+  bool _checkingPromo = false;
   List<Customer> _customers = [];
   int? _selectedCustomerId;
+  Promotion? _appliedPromotion;
+  String? _promoError;
 
   @override
   void initState() {
@@ -32,19 +37,55 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     _db.getAllCustomers().then((c) => setState(() => _customers = c));
   }
 
+  Future<void> _applyPromoCode(double subtotal) async {
+    final code = _promoCodeController.text.trim();
+    if (code.isEmpty) return;
+    setState(() {
+      _checkingPromo = true;
+      _promoError = null;
+    });
+    final promo = await _db.findPromoByCode(code);
+    setState(() {
+      _checkingPromo = false;
+      if (promo == null) {
+        _appliedPromotion = null;
+        _promoError = 'Code promo invalide ou expiré';
+      } else {
+        _appliedPromotion = promo;
+        _promoError = null;
+      }
+    });
+  }
+
+  void _removePromo() {
+    setState(() {
+      _appliedPromotion = null;
+      _promoCodeController.clear();
+      _promoError = null;
+    });
+  }
+
+  double _discountAmount(double subtotal) {
+    if (_appliedPromotion == null) return 0;
+    return subtotal - _appliedPromotion!.applyTo(subtotal);
+  }
+
   @override
   Widget build(BuildContext context) {
     final cart = context.watch<CartProvider>();
     final currency = cart.currency;
     final isCredit = _selectedMethod == PaymentMethod.credit;
+    final subtotal = cart.total;
+    final discount = _discountAmount(subtotal);
+    final payableTotal = (subtotal - discount).clamp(0, double.infinity).toDouble();
     final amountPaid = double.tryParse(_amountController.text) ?? 0;
-    final change = amountPaid - cart.total;
-    final creditBalance = cart.total - amountPaid;
+    final change = amountPaid - payableTotal;
+    final creditBalance = payableTotal - amountPaid;
 
     final canConfirm = !_isProcessing &&
         (isCredit
-            ? _selectedCustomerId != null && amountPaid <= cart.total
-            : amountPaid >= cart.total);
+            ? _selectedCustomerId != null && amountPaid <= payableTotal
+            : amountPaid >= payableTotal);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Paiement')),
@@ -75,13 +116,73 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         ),
                       ],
                     ),
+                    if (discount > 0) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        formatPrice(subtotal, currency),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: AppColors.textSecondary,
+                          decoration: TextDecoration.lineThrough,
+                        ),
+                      ),
+                      Text(
+                        'Remise : -${formatPrice(discount, currency)}',
+                        style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.success,
+                            fontWeight: FontWeight.w600),
+                      ),
+                    ],
                     Text(
-                      formatPrice(cart.total, currency),
+                      formatPrice(payableTotal, currency),
                       style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
               ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _promoCodeController,
+                    enabled: _appliedPromotion == null,
+                    textCapitalization: TextCapitalization.characters,
+                    decoration: InputDecoration(
+                      labelText: 'Code promo (optionnel)',
+                      border: const OutlineInputBorder(),
+                      errorText: _promoError,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                SizedBox(
+                  height: 56,
+                  child: _appliedPromotion != null
+                      ? OutlinedButton(
+                          onPressed: _removePromo,
+                          style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.danger),
+                          child: const Text('Retirer'),
+                        )
+                      : ElevatedButton(
+                          onPressed: _checkingPromo
+                              ? null
+                              : () => _applyPromoCode(subtotal),
+                          child: _checkingPromo
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                      color: Colors.white, strokeWidth: 2),
+                                )
+                              : const Text('Appliquer'),
+                        ),
+                ),
+              ],
             ),
             const SizedBox(height: 20),
             Text(isCredit ? 'Client (obligatoire pour le crédit)' : 'Client (optionnel)',
@@ -137,13 +238,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             const SizedBox(height: 12),
             if (isCredit)
               Text(
-                amountPaid > cart.total
+                amountPaid > payableTotal
                     ? 'L\'acompte ne peut pas dépasser le total'
                     : 'Solde restant à crédit : ${formatPrice(creditBalance, currency)}',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: amountPaid > cart.total
+                  color: amountPaid > payableTotal
                       ? Colors.red
                       : AppColors.danger,
                 ),
@@ -191,6 +292,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       amountPaid: double.tryParse(_amountController.text) ?? 0,
       customerId: _selectedCustomerId,
       currency: cart.currency,
+      discountAmount: _discountAmount(cart.total),
+      promoCode: _appliedPromotion?.promoCode,
     );
 
     await _db.insertSale(sale);
@@ -352,6 +455,30 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             pw.SizedBox(height: 8),
 
             // Total
+            if (sale.discountAmount > 0) ...[
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('Sous-total',
+                      style: pw.TextStyle(fontSize: 10, color: greyText)),
+                  pw.Text(formatPricePlain(sale.subtotal, sale.currency),
+                      style: pw.TextStyle(fontSize: 10, color: greyText)),
+                ],
+              ),
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text(
+                      sale.promoCode != null
+                          ? 'Remise (${sale.promoCode})'
+                          : 'Remise',
+                      style: pw.TextStyle(fontSize: 10, color: greyText)),
+                  pw.Text('-${formatPricePlain(sale.discountAmount, sale.currency)}',
+                      style: pw.TextStyle(fontSize: 10, color: greyText)),
+                ],
+              ),
+              pw.SizedBox(height: 4),
+            ],
             pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
               children: [

@@ -35,6 +35,8 @@ class Sale {
   final String? cashierName;
   final int? customerId;
   final String currency;
+  final double discountAmount;
+  final String? promoCode;
 
   Sale({
     this.id,
@@ -45,9 +47,13 @@ class Sale {
     this.cashierName,
     this.customerId,
     this.currency = 'HTG',
+    this.discountAmount = 0,
+    this.promoCode,
   });
 
-  double get total => items.fold(0, (sum, item) => sum + item.total);
+  double get subtotal => items.fold(0, (sum, item) => sum + item.total);
+  double get total =>
+      (subtotal - discountAmount) < 0 ? 0 : subtotal - discountAmount;
   double get change => amountPaid - total;
 
   Map<String, dynamic> toMap() {
@@ -60,6 +66,8 @@ class Sale {
       'cashierName': cashierName,
       'customerId': customerId,
       'currency': currency,
+      'discountAmount': discountAmount,
+      'promoCode': promoCode,
     };
   }
 }

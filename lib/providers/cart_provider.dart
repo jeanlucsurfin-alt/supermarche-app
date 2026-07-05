@@ -11,8 +11,8 @@ class CartProvider extends ChangeNotifier {
   int get itemCount => _items.values.fold(0, (sum, item) => sum + item.quantity);
   String get currency => _currency;
 
-  void addProduct(Product product) {
-    final unitPrice = product.priceFor(_currency);
+  void addProduct(Product product, {double? unitPriceOverride}) {
+    final unitPrice = unitPriceOverride ?? product.priceFor(_currency);
     if (_items.containsKey(product.id)) {
       final existing = _items[product.id]!;
       _items[product.id!] = SaleItem(
