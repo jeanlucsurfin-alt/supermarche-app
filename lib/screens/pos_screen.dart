@@ -4,6 +4,8 @@ import '../models/product.dart';
 import '../models/promotion.dart';
 import '../providers/cart_provider.dart';
 import '../providers/category_provider.dart';
+import '../providers/locale_provider.dart';
+import '../l10n/translations.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/currency.dart';
@@ -114,9 +116,10 @@ class _PosScreenState extends State<PosScreen> {
   @override
   Widget build(BuildContext context) {
     final cart = context.watch<CartProvider>();
+    final lang = context.watch<LocaleProvider>().language;
     return Scaffold(
       appBar: AppBar(
-        title: const FafouttHeader(subtitle: 'Point de Vente'),
+        title: FafouttHeader(subtitle: tr(lang, 'pos_subtitle')),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 4),
@@ -179,7 +182,7 @@ class _PosScreenState extends State<PosScreen> {
                 child: TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
-                    hintText: 'Rechercher un produit ou un code...',
+                    hintText: tr(lang, 'pos_search_hint'),
                     prefixIcon: const Icon(Icons.search_rounded,
                         color: AppColors.textSecondary),
                   ),
@@ -232,7 +235,7 @@ class _PosScreenState extends State<PosScreen> {
                             const Icon(Icons.inventory_2_outlined,
                                 size: 40, color: AppColors.textSecondary),
                             const SizedBox(height: 8),
-                            Text('Aucun produit trouvé',
+                            Text(tr(lang, 'pos_no_product_found'),
                                 style:
                                     TextStyle(color: AppColors.textSecondary)),
                           ],
@@ -336,6 +339,7 @@ class _CartSummaryBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cart = context.watch<CartProvider>();
+    final lang = context.watch<LocaleProvider>().language;
     if (cart.items.isEmpty) return const SizedBox.shrink();
 
     return SafeArea(
@@ -408,8 +412,8 @@ class _CartSummaryBar extends StatelessWidget {
                             fontSize: 13)),
                   ),
                   const SizedBox(width: 12),
-                  const Text('Voir le panier',
-                      style: TextStyle(
+                  Text(tr(lang, 'pos_view_cart'),
+                      style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,
                           fontSize: 14)),
@@ -454,6 +458,7 @@ class _CartPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cart = context.watch<CartProvider>();
+    final lang = context.watch<LocaleProvider>().language;
 
     return Column(
       children: [
@@ -501,7 +506,7 @@ class _CartPanel extends StatelessWidget {
                           size: 40, color: AppColors.textSecondary),
                       const SizedBox(height: 8),
                       Text(
-                        'Le panier est vide\nTouchez un produit pour l\'ajouter',
+                        tr(lang, 'pos_cart_empty'),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                             color: AppColors.textSecondary, fontSize: 13),
@@ -633,7 +638,7 @@ class _CartPanel extends StatelessWidget {
                           );
                           onCheckoutDone();
                         },
-                  label: const Text('PASSER AU PAIEMENT'),
+                  label: Text(tr(lang, 'pos_checkout_button')),
                 ),
               ),
             ],

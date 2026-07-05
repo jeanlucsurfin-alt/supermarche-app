@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/employee.dart';
 import '../providers/session_provider.dart';
+import '../providers/locale_provider.dart';
+import '../l10n/translations.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 import 'dashboard_screen.dart';
@@ -47,6 +49,7 @@ class _MainShellState extends State<MainShell> {
     final session = context.watch<SessionProvider>();
     final role = session.currentEmployee?.role ?? EmployeeRole.caissier;
     final isCashierOnly = role == EmployeeRole.caissier;
+    final lang = context.watch<LocaleProvider>().language;
 
     // Un caissier n'a accès qu'au module Vente, sans tableau de bord.
     if (isCashierOnly) {
@@ -83,15 +86,15 @@ class _MainShellState extends State<MainShell> {
           backgroundColor: Colors.white,
           height: 62,
           destinations: [
-            const NavigationDestination(
-              icon: Icon(Icons.dashboard_outlined, color: AppColors.textSecondary),
-              selectedIcon: Icon(Icons.dashboard_rounded, color: AppColors.navy),
-              label: 'Accueil',
+            NavigationDestination(
+              icon: const Icon(Icons.dashboard_outlined, color: AppColors.textSecondary),
+              selectedIcon: const Icon(Icons.dashboard_rounded, color: AppColors.navy),
+              label: tr(lang, 'nav_home'),
             ),
-            const NavigationDestination(
-              icon: Icon(Icons.point_of_sale_outlined, color: AppColors.textSecondary),
-              selectedIcon: Icon(Icons.point_of_sale_rounded, color: AppColors.navy),
-              label: 'Vente',
+            NavigationDestination(
+              icon: const Icon(Icons.point_of_sale_outlined, color: AppColors.textSecondary),
+              selectedIcon: const Icon(Icons.point_of_sale_rounded, color: AppColors.navy),
+              label: tr(lang, 'nav_sales'),
             ),
             NavigationDestination(
               icon: _lowStockCount > 0
@@ -110,12 +113,12 @@ class _MainShellState extends State<MainShell> {
                       child: const Icon(Icons.inventory_2_rounded, color: AppColors.navy),
                     )
                   : const Icon(Icons.inventory_2_rounded, color: AppColors.navy),
-              label: 'Stocks',
+              label: tr(lang, 'nav_stock'),
             ),
-            const NavigationDestination(
-              icon: Icon(Icons.bar_chart_outlined, color: AppColors.textSecondary),
-              selectedIcon: Icon(Icons.bar_chart_rounded, color: AppColors.navy),
-              label: 'Rapports',
+            NavigationDestination(
+              icon: const Icon(Icons.bar_chart_outlined, color: AppColors.textSecondary),
+              selectedIcon: const Icon(Icons.bar_chart_rounded, color: AppColors.navy),
+              label: tr(lang, 'nav_reports'),
             ),
           ],
         ),

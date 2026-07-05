@@ -3,7 +3,10 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart' show Share, XFile;
+import '../providers/locale_provider.dart';
+import '../l10n/translations.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 import 'printer_settings_screen.dart';
@@ -213,7 +216,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Paramètres')),
+      appBar: AppBar(
+          title: Text(tr(context.watch<LocaleProvider>().language, 'settings_title'))),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
@@ -246,6 +250,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ],
                     ),
                   ),
+                Consumer<LocaleProvider>(
+                  builder: (context, locale, _) => Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Langue / Lang',
+                          style: Theme.of(context).textTheme.titleMedium),
+                      const SizedBox(height: 12),
+                      SegmentedButton<String>(
+                        segments: const [
+                          ButtonSegment(value: 'fr', label: Text('Français')),
+                          ButtonSegment(value: 'ht', label: Text('Kreyòl ayisyen')),
+                        ],
+                        selected: {locale.language},
+                        onSelectionChanged: (s) => locale.setLanguage(s.first),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
                 Text('Informations du magasin',
                     style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 12),

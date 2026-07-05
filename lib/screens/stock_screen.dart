@@ -5,6 +5,8 @@ import '../models/product.dart';
 import '../models/stock_movement.dart';
 import '../models/supplier.dart';
 import '../providers/category_provider.dart';
+import '../providers/locale_provider.dart';
+import '../l10n/translations.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/fafoutt_logo.dart';
@@ -71,9 +73,10 @@ class _StockScreenState extends State<StockScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = context.watch<LocaleProvider>().language;
     return Scaffold(
       appBar: AppBar(
-        title: const FafouttHeader(subtitle: 'Gestion des stocks'),
+        title: FafouttHeader(subtitle: tr(lang, 'stock_subtitle')),
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert_rounded),
@@ -159,7 +162,7 @@ class _StockScreenState extends State<StockScreen> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Rechercher un produit ou un code...',
+                hintText: tr(lang, 'stock_search_hint'),
                 prefixIcon: const Icon(Icons.search_rounded,
                     color: AppColors.textSecondary),
               ),
@@ -171,7 +174,7 @@ class _StockScreenState extends State<StockScreen> {
             child: Row(
               children: [
                 FilterChip(
-                  label: Text('Stock bas ($_lowStockCount)'),
+                  label: Text('${tr(lang, 'stock_low_stock_filter')} ($_lowStockCount)'),
                   selected: _lowStockOnly,
                   onSelected: (v) {
                     setState(() => _lowStockOnly = v);
@@ -203,7 +206,7 @@ class _StockScreenState extends State<StockScreen> {
           Expanded(
             child: _filtered.isEmpty
                 ? Center(
-                    child: Text('Aucun produit trouvé',
+                    child: Text(tr(lang, 'stock_no_product'),
                         style: TextStyle(color: AppColors.textSecondary)),
                   )
                 : ListView.builder(

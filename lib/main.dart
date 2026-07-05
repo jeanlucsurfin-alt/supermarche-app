@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/cart_provider.dart';
 import 'providers/category_provider.dart';
+import 'providers/locale_provider.dart';
 import 'providers/session_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_shell.dart';
@@ -21,6 +22,7 @@ class FafouttStoreApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => CategoryProvider()..load()),
         ChangeNotifierProvider(create: (_) => SessionProvider()),
+        ChangeNotifierProvider(create: (_) => LocaleProvider()..load()),
       ],
       child: MaterialApp(
         title: 'Fafoutt Store',
