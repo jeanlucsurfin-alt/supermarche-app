@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import '../models/product.dart';
 import '../providers/category_provider.dart';
 import '../providers/session_provider.dart';
@@ -60,6 +63,48 @@ class _ProductsScreenState extends State<ProductsScreen> {
       ),
     );
     if (changed == true) _load();
+  }
+
+  Future<void> _printLabel(Product product) async {
+    final pdf = pw.Document();
+    // Format étiquette compact (environ 6cm x 4cm).
+    pdf.addPage(
+      pw.Page(
+        pageFormat: const PdfPageFormat(6 * PdfPageFormat.cm, 4 * PdfPageFormat.cm,
+            marginAll: 6),
+        build: (context) => pw.Column(
+          mainAxisAlignment: pw.MainAxisAlignment.center,
+          crossAxisAlignment: pw.CrossAxisAlignment.center,
+          children: [
+            pw.Text(
+              product.name,
+              textAlign: pw.TextAlign.center,
+              maxLines: 2,
+              style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+            ),
+            pw.SizedBox(height: 4),
+            pw.Text(
+              _currencyFormat.format(product.sellPrice),
+              style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+            ),
+            pw.SizedBox(height: 6),
+            pw.BarcodeWidget(
+              barcode: pw.Barcode.code128(),
+              data: product.barcode,
+              width: 140,
+              height: 40,
+              drawText: false,
+            ),
+            pw.SizedBox(height: 2),
+            pw.Text(product.barcode, style: const pw.TextStyle(fontSize: 8)),
+          ],
+        ),
+      ),
+    );
+    await Printing.sharePdf(
+      bytes: await pdf.save(),
+      filename: 'etiquette_${product.name.replaceAll(' ', '_')}.pdf',
+    );
   }
 
   Future<void> _confirmDelete(Product product) async {
@@ -158,10 +203,21 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             '${product.sellPriceUSD > 0 ? ' · \$${product.sellPriceUSD.toStringAsFixed(2)}' : ''}',
                             style: const TextStyle(fontSize: 12),
                           ),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete_outline,
-                                color: AppColors.textSecondary, size: 20),
-                            onPressed: () => _confirmDelete(product),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.qr_code_2_rounded,
+                                    color: AppColors.textSecondary, size: 20),
+                                tooltip: 'Générer une étiquette',
+                                onPressed: () => _printLabel(product),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline,
+                                    color: AppColors.textSecondary, size: 20),
+                                onPressed: () => _confirmDelete(product),
+                              ),
+                            ],
                           ),
                         ),
                       );
