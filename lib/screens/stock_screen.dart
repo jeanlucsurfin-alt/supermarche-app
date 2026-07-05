@@ -10,7 +10,7 @@ import '../l10n/translations.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/fafoutt_logo.dart';
-import '../widgets/logout_button.dart';
+import '../widgets/main_menu_sheet.dart';
 import 'categories_screen.dart';
 import 'products_screen.dart';
 import 'promotions_screen.dart';
@@ -76,7 +76,10 @@ class _StockScreenState extends State<StockScreen> {
     final lang = context.watch<LocaleProvider>().language;
     return Scaffold(
       appBar: AppBar(
-        title: FafouttHeader(subtitle: tr(lang, 'stock_subtitle')),
+        title: FafouttHeader(
+          subtitle: tr(lang, 'stock_subtitle'),
+          onTap: () => showMainMenu(context),
+        ),
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert_rounded),
@@ -151,7 +154,6 @@ class _StockScreenState extends State<StockScreen> {
               ),
             ],
           ),
-          const LogoutButton(),
           const SizedBox(width: 4),
         ],
       ),

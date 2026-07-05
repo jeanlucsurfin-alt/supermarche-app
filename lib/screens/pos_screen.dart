@@ -10,7 +10,7 @@ import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/currency.dart';
 import '../widgets/fafoutt_logo.dart';
-import '../widgets/logout_button.dart';
+import '../widgets/main_menu_sheet.dart';
 import 'barcode_scanner_screen.dart';
 import 'categories_screen.dart';
 import 'checkout_screen.dart';
@@ -119,7 +119,10 @@ class _PosScreenState extends State<PosScreen> {
     final lang = context.watch<LocaleProvider>().language;
     return Scaffold(
       appBar: AppBar(
-        title: FafouttHeader(subtitle: tr(lang, 'pos_subtitle')),
+        title: FafouttHeader(
+          subtitle: tr(lang, 'pos_subtitle'),
+          onTap: () => showMainMenu(context),
+        ),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 4),
@@ -167,7 +170,6 @@ class _PosScreenState extends State<PosScreen> {
             tooltip: 'Scanner un code-barres',
             onPressed: _scanBarcode,
           ),
-          const LogoutButton(),
           const SizedBox(width: 4),
         ],
       ),

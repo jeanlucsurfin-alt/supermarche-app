@@ -9,7 +9,7 @@ import 'package:share_plus/share_plus.dart' show Share, XFile;
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/fafoutt_logo.dart';
-import '../widgets/logout_button.dart';
+import '../widgets/main_menu_sheet.dart';
 import 'credit_screen.dart';
 import 'customers_screen.dart';
 import 'employees_screen.dart';
@@ -189,130 +189,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const FafouttHeader(subtitle: 'Rapports de ventes'),
+        title: FafouttHeader(
+          subtitle: 'Rapports de ventes',
+          onTap: () => showMainMenu(context),
+        ),
         actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert_rounded),
-            tooltip: 'Gestion',
-            onSelected: (value) async {
-              Widget? screen;
-              switch (value) {
-                case 'employes':
-                  screen = const EmployeesScreen();
-                  break;
-                case 'clients':
-                  screen = const CustomersScreen();
-                  break;
-                case 'creances':
-                  screen = const CreditScreen();
-                  break;
-                case 'parametres':
-                  screen = const SettingsScreen();
-                  break;
-                case 'cloture':
-                  screen = const CashClosingScreen();
-                  break;
-                case 'retours':
-                  screen = const ReturnsScreen();
-                  break;
-                case 'depenses':
-                  screen = const ExpensesScreen();
-                  break;
-                case 'journal':
-                  screen = const ActivityLogScreen();
-                  break;
-              }
-              if (screen != null) {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => screen!),
-                );
-                _load();
-              }
-            },
-            itemBuilder: (context) => const [
-              PopupMenuItem(
-                value: 'employes',
-                child: Row(
-                  children: [
-                    Icon(Icons.badge_outlined, size: 18),
-                    SizedBox(width: 10),
-                    Text('Employés'),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'clients',
-                child: Row(
-                  children: [
-                    Icon(Icons.people_outline_rounded, size: 18),
-                    SizedBox(width: 10),
-                    Text('Clients'),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'creances',
-                child: Row(
-                  children: [
-                    Icon(Icons.schedule_rounded, size: 18),
-                    SizedBox(width: 10),
-                    Text('Créances'),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'parametres',
-                child: Row(
-                  children: [
-                    Icon(Icons.settings_outlined, size: 18),
-                    SizedBox(width: 10),
-                    Text('Paramètres'),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'cloture',
-                child: Row(
-                  children: [
-                    Icon(Icons.point_of_sale_rounded, size: 18),
-                    SizedBox(width: 10),
-                    Text('Clôture de caisse'),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'retours',
-                child: Row(
-                  children: [
-                    Icon(Icons.undo_rounded, size: 18),
-                    SizedBox(width: 10),
-                    Text('Retours'),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'depenses',
-                child: Row(
-                  children: [
-                    Icon(Icons.trending_down_rounded, size: 18),
-                    SizedBox(width: 10),
-                    Text('Dépenses'),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'journal',
-                child: Row(
-                  children: [
-                    Icon(Icons.history_rounded, size: 18),
-                    SizedBox(width: 10),
-                    Text('Journal d\'activité'),
-                  ],
-                ),
-              ),
-            ],
-          ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.ios_share_rounded),
             tooltip: 'Exporter',
@@ -343,7 +224,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
               ),
             ],
           ),
-          const LogoutButton(),
           const SizedBox(width: 4),
         ],
       ),

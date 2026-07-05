@@ -4,7 +4,7 @@ import '../models/employee_shift.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/fafoutt_logo.dart';
-import '../widgets/logout_button.dart';
+import '../widgets/main_menu_sheet.dart';
 
 class DashboardScreen extends StatefulWidget {
   final ValueChanged<int> onNavigate;
@@ -74,8 +74,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const FafouttHeader(subtitle: 'Tableau de bord'),
-        actions: const [LogoutButton(), SizedBox(width: 4)],
+        title: FafouttHeader(
+          subtitle: 'Tableau de bord',
+          onTap: () => showMainMenu(context),
+        ),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())

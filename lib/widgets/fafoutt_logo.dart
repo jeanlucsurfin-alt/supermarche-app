@@ -32,15 +32,17 @@ class FafouttLogo extends StatelessWidget {
 }
 
 /// Bandeau titre avec logo + nom du magasin, utilisé en en-tête d'écran.
+/// Si [onTap] est fourni, le logo devient cliquable (menu principal).
 class FafouttHeader extends StatelessWidget {
   final String subtitle;
-  const FafouttHeader({super.key, this.subtitle = 'Point de Vente'});
+  final VoidCallback? onTap;
+  const FafouttHeader({super.key, this.subtitle = 'Point de Vente', this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final content = Row(
       children: [
-        const FafouttLogo(size: 34),
+        FafouttLogo(size: 34),
         const SizedBox(width: 10),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -66,6 +68,17 @@ class FafouttHeader extends StatelessWidget {
           ],
         ),
       ],
+    );
+
+    if (onTap == null) return content;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(24),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: content,
+      ),
     );
   }
 }
