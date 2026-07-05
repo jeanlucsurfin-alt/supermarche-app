@@ -1,4 +1,4 @@
-import 'package:blue_thermal_printer/blue_thermal_printer.dart';
+import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 import 'package:flutter/material.dart';
 import '../services/bluetooth_printer_service.dart';
 import '../theme/app_theme.dart';
@@ -12,8 +12,7 @@ class PrinterSettingsScreen extends StatefulWidget {
 
 class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
   final BluetoothPrinterService _printerService = BluetoothPrinterService();
-  List<BluetoothDevice> _devices = [];
-  String? _savedAddress;
+  List<BluetoothInfo> _devices = [];
   String? _savedName;
   bool _loading = true;
   bool _connecting = false;
@@ -47,20 +46,19 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
     }
   }
 
-  Future<void> _selectDevice(BluetoothDevice device) async {
+  Future<void> _selectDevice(BluetoothInfo device) async {
     setState(() => _connecting = true);
-    final connected = await _printerService.connect(device);
+    final connected = await _printerService.connect(device.macAdress);
     if (connected) {
       await _printerService.savePrinter(device);
       setState(() {
-        _savedAddress = device.address;
         _savedName = device.name;
         _connecting = false;
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Connecté à ${device.name ?? 'l\'imprimante'}'),
+            content: Text('Connecté à ${device.name}'),
             backgroundColor: AppColors.success,
           ),
         );
@@ -142,8 +140,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
               )
             else
               ..._devices.map((device) {
-                final isSelected = device.address == _savedAddress ||
-                    (_savedAddress == null && device.name == _savedName);
+                final isSelected = device.name == _savedName;
                 return Card(
                   margin: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
@@ -159,9 +156,9 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                       child: const Icon(Icons.print_outlined,
                           color: AppColors.navy, size: 18),
                     ),
-                    title: Text(device.name ?? 'Appareil sans nom',
+                    title: Text(device.name,
                         style: const TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: Text(device.address ?? '',
+                    subtitle: Text(device.macAdress,
                         style: const TextStyle(fontSize: 11)),
                     trailing: isSelected
                         ? const Icon(Icons.check_circle_rounded,
