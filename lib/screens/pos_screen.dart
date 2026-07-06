@@ -247,21 +247,21 @@ class _PosScreenState extends State<PosScreen> {
                         builder: (context, gridConstraints) {
                           final width = gridConstraints.maxWidth;
                           final crossAxisCount = width > 900
-                              ? 5
+                              ? 6
                               : width > 650
-                                  ? 4
-                                  : width > 420
+                                  ? 5
+                                  : width > 340
                                       ? 3
                                       : 2;
                           return GridView.builder(
                             padding:
-                                EdgeInsets.fromLTRB(16, 0, 16, isWide ? 16 : 90),
+                                EdgeInsets.fromLTRB(12, 0, 12, isWide ? 16 : 90),
                             gridDelegate:
                                 SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: crossAxisCount,
-                              childAspectRatio: 0.82,
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 12,
+                              childAspectRatio: 0.95,
+                              crossAxisSpacing: 8,
+                              mainAxisSpacing: 8,
                             ),
                             itemCount: _filteredProducts.length,
                             itemBuilder: (context, index) {
@@ -687,27 +687,27 @@ class _ProductCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: Padding(
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   Container(
-                    width: 34,
-                    height: 34,
+                    width: 26,
+                    height: 26,
                     decoration: BoxDecoration(
                       color: catColor.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(8),
                     ),
                     alignment: Alignment.center,
-                    child: Icon(catIcon, color: catColor, size: 18),
+                    child: Icon(catIcon, color: catColor, size: 14),
                   ),
                   if (_hasDiscount) ...[
                     const Spacer(),
                     Container(
                       padding:
-                          const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                       decoration: BoxDecoration(
                         color: AppColors.danger,
                         borderRadius: BorderRadius.circular(6),
@@ -716,7 +716,7 @@ class _ProductCard extends StatelessWidget {
                           style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w700,
-                              fontSize: 9)),
+                              fontSize: 8)),
                     ),
                   ],
                 ],
@@ -727,9 +727,9 @@ class _ProductCard extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                    fontWeight: FontWeight.w600, fontSize: 12.5, height: 1.2),
+                    fontWeight: FontWeight.w600, fontSize: 11, height: 1.15),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
               if (_hasDiscount)
                 FittedBox(
                   fit: BoxFit.scaleDown,
@@ -739,7 +739,7 @@ class _ProductCard extends StatelessWidget {
                     maxLines: 1,
                     style: const TextStyle(
                       color: AppColors.textSecondary,
-                      fontSize: 11,
+                      fontSize: 10,
                       decoration: TextDecoration.lineThrough,
                     ),
                   ),
@@ -753,25 +753,25 @@ class _ProductCard extends StatelessWidget {
                   style: TextStyle(
                     color: _hasDiscount ? AppColors.danger : AppColors.gold,
                     fontWeight: FontWeight.w700,
-                    fontSize: 13,
+                    fontSize: 12,
                   ),
                 ),
               ),
               if (product.isLowStock)
                 Padding(
-                  padding: const EdgeInsets.only(top: 3),
+                  padding: const EdgeInsets.only(top: 2),
                   child: Row(
                     children: [
                       Container(
-                        width: 5,
-                        height: 5,
+                        width: 4,
+                        height: 4,
                         decoration: const BoxDecoration(
                             color: AppColors.danger, shape: BoxShape.circle),
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: 3),
                       const Text('Stock bas',
                           style:
-                              TextStyle(color: AppColors.danger, fontSize: 10)),
+                              TextStyle(color: AppColors.danger, fontSize: 9)),
                     ],
                   ),
                 ),
