@@ -235,6 +235,7 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
               },
             ),
       floatingActionButton: FloatingActionButton.extended(
+        foregroundColor: Colors.white,
         onPressed: () => _openEditDialog(),
         backgroundColor: AppColors.navy,
         icon: const Icon(Icons.add_rounded),

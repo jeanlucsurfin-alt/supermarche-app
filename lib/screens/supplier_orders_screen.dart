@@ -128,6 +128,7 @@ class _SupplierOrdersScreenState extends State<SupplierOrdersScreen> {
                   },
                 ),
       floatingActionButton: FloatingActionButton.extended(
+        foregroundColor: Colors.white,
         onPressed: _openNewOrder,
         backgroundColor: AppColors.navy,
         icon: const Icon(Icons.add_rounded),
