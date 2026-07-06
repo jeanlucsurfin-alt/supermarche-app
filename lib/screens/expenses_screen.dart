@@ -6,16 +6,6 @@ import '../theme/app_theme.dart';
 import '../widgets/fafoutt_logo.dart';
 import '../widgets/logout_button.dart';
 
-const List<String> kExpenseCategories = [
-  'Loyer',
-  'Électricité',
-  'Salaires',
-  'Transport',
-  'Fournitures',
-  'Entretien',
-  'Autre',
-];
-
 class ExpensesScreen extends StatefulWidget {
   const ExpensesScreen({super.key});
 
@@ -26,6 +16,7 @@ class ExpensesScreen extends StatefulWidget {
 class _ExpensesScreenState extends State<ExpensesScreen> {
   final DatabaseService _db = DatabaseService();
   List<Expense> _expenses = [];
+  List<String> _categories = [];
   bool _loading = true;
   final _currencyFormat =
       NumberFormat.currency(locale: 'fr', symbol: 'HTG ', decimalDigits: 0);
@@ -44,8 +35,10 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
       DateTime.now().subtract(const Duration(days: 90)),
       DateTime.now(),
     );
+    final categories = await _db.getExpenseCategories();
     setState(() {
       _expenses = expenses;
+      _categories = categories;
       _loading = false;
     });
   }
@@ -72,8 +65,60 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
     }
   }
 
+  Future<void> _addNewCategory(
+      BuildContext dialogContext, StateSetter setDialogState,
+      List<String> categoryOptions, ValueChanged<String> onCreated) async {
+    final controller = TextEditingController();
+    final created = await showDialog<String>(
+      context: dialogContext,
+      builder: (context) => AlertDialog(
+        title: const Text('Nouvelle catégorie'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(labelText: 'Nom de la catégorie'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('Créer'),
+          ),
+        ],
+      ),
+    );
+
+    if (created == null || created.isEmpty) return;
+
+    if (categoryOptions.contains(created)) {
+      onCreated(created);
+      return;
+    }
+
+    final success = await _db.insertExpenseCategory(created);
+    if (!success) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cette catégorie existe déjà'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+      return;
+    }
+
+    setDialogState(() => categoryOptions.add(created));
+    onCreated(created);
+  }
+
   Future<void> _openAddDialog() async {
-    String selectedCategory = kExpenseCategories.first;
+    final categoryOptions = await _db.getExpenseCategories();
+    String? selectedCategory =
+        categoryOptions.isNotEmpty ? categoryOptions.first : null;
     final amountController = TextEditingController();
     final noteController = TextEditingController();
     DateTime selectedDate = DateTime.now();
@@ -87,14 +132,34 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                DropdownButtonFormField<String>(
-                  value: selectedCategory,
-                  decoration: const InputDecoration(labelText: 'Catégorie'),
-                  items: kExpenseCategories
-                      .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                      .toList(),
-                  onChanged: (v) =>
-                      setDialogState(() => selectedCategory = v ?? selectedCategory),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        value: selectedCategory,
+                        decoration: const InputDecoration(labelText: 'Catégorie'),
+                        items: categoryOptions
+                            .map((c) =>
+                                DropdownMenuItem(value: c, child: Text(c)))
+                            .toList(),
+                        onChanged: (v) => setDialogState(
+                            () => selectedCategory = v ?? selectedCategory),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.add_circle_outline,
+                          color: AppColors.navy),
+                      tooltip: 'Nouvelle catégorie',
+                      onPressed: () => _addNewCategory(
+                        context,
+                        setDialogState,
+                        categoryOptions,
+                        (created) =>
+                            setDialogState(() => selectedCategory = created),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -148,8 +213,17 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                   );
                   return;
                 }
+                if (selectedCategory == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Sélectionnez ou créez une catégorie'),
+                      backgroundColor: AppColors.danger,
+                    ),
+                  );
+                  return;
+                }
                 await _db.insertExpense(Expense(
-                  category: selectedCategory,
+                  category: selectedCategory!,
                   amount: amount,
                   date: selectedDate,
                   note: noteController.text.trim().isEmpty

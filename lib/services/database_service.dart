@@ -34,7 +34,7 @@ class DatabaseService {
     final path = join(await getDatabasesPath(), 'fafoutt_store.db');
     return await openDatabase(
       path,
-      version: 15,
+      version: 16,
       onCreate: _onCreate,
       onUpgrade: (db, oldVersion, newVersion) async {
         await db.execute('DROP TABLE IF EXISTS sale_items');
@@ -56,6 +56,7 @@ class DatabaseService {
         await db.execute('DROP TABLE IF EXISTS expenses');
         await db.execute('DROP TABLE IF EXISTS promotions');
         await db.execute('DROP TABLE IF EXISTS activity_logs');
+        await db.execute('DROP TABLE IF EXISTS expense_categories');
         await _onCreate(db, newVersion);
       },
     );
@@ -185,6 +186,25 @@ class DatabaseService {
         note TEXT
       )
     ''');
+
+    await db.execute('''
+      CREATE TABLE expense_categories(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE
+      )
+    ''');
+
+    for (final name in [
+      'Loyer',
+      'Électricité',
+      'Salaires',
+      'Transport',
+      'Fournitures',
+      'Entretien',
+      'Autre',
+    ]) {
+      await db.insert('expense_categories', {'name': name});
+    }
 
     await db.execute('''
       CREATE TABLE promotions(
@@ -1331,6 +1351,24 @@ class DatabaseService {
       WHERE date BETWEEN ? AND ?
     ''', [start.toIso8601String(), end.toIso8601String()]);
     return (result.first['total'] as num?)?.toDouble() ?? 0;
+  }
+
+  Future<List<String>> getExpenseCategories() async {
+    final db = await database;
+    final maps = await db.query('expense_categories', orderBy: 'name ASC');
+    return maps.map((m) => m['name'] as String).toList();
+  }
+
+  /// Ajoute une nouvelle catégorie de dépense. Renvoie false si une
+  /// catégorie du même nom existe déjà.
+  Future<bool> insertExpenseCategory(String name) async {
+    final db = await database;
+    try {
+      await db.insert('expense_categories', {'name': name});
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   // ---- PROMOTIONS ET RÉDUCTIONS ----
