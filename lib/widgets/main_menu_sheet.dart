@@ -10,6 +10,7 @@ import '../screens/cash_closing_screen.dart';
 import '../screens/returns_screen.dart';
 import '../screens/expenses_screen.dart';
 import '../screens/activity_log_screen.dart';
+import '../screens/promotions_screen.dart';
 
 /// Ouvre le menu principal (gestion + déconnexion) juste en-dessous du
 /// widget identifié par [anchorKey] — typiquement le logo "F" de l'en-tête.
@@ -44,6 +45,7 @@ Future<void> showMainMenu(GlobalKey anchorKey) async {
       _item(Icons.point_of_sale_rounded, 'Clôture de caisse', 'cloture'),
       _item(Icons.undo_rounded, 'Retours', 'retours'),
       _item(Icons.trending_down_rounded, 'Dépenses', 'depenses'),
+      _item(Icons.local_offer_outlined, 'Promotions', 'promotions'),
       _item(Icons.history_rounded, 'Journal d\'activité', 'journal'),
       const PopupMenuDivider(height: 8),
       _item(Icons.logout_rounded, 'Déconnexion', 'logout', color: AppColors.danger),
@@ -79,6 +81,9 @@ Future<void> showMainMenu(GlobalKey anchorKey) async {
       break;
     case 'depenses':
       screen = const ExpensesScreen();
+      break;
+    case 'promotions':
+      screen = const PromotionsScreen();
       break;
     case 'journal':
       screen = const ActivityLogScreen();
