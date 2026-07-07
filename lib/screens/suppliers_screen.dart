@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/supplier.dart';
+import '../providers/locale_provider.dart';
+import '../l10n/translations.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 import 'supplier_orders_screen.dart';
@@ -27,6 +30,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
   }
 
   Future<void> _openAddDialog() async {
+    final lang = context.read<LocaleProvider>().language;
     final nameController = TextEditingController();
     final phoneController = TextEditingController();
     final addressController = TextEditingController();
@@ -34,32 +38,32 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
     final saved = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Nouveau fournisseur'),
+        title: Text(tr(lang, 'suppliers_new')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: nameController,
-              decoration: const InputDecoration(labelText: 'Nom'),
+              decoration: InputDecoration(labelText: tr(lang, 'suppliers_name')),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: phoneController,
-              decoration: const InputDecoration(labelText: 'Téléphone'),
+              decoration: InputDecoration(labelText: tr(lang, 'suppliers_phone')),
               keyboardType: TextInputType.phone,
             ),
             const SizedBox(height: 12),
             TextField(
               controller: addressController,
               decoration:
-                  const InputDecoration(labelText: 'Adresse (optionnel)'),
+                  InputDecoration(labelText: tr(lang, 'suppliers_address')),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annuler'),
+            child: Text(tr(lang, 'common_cancel')),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -76,7 +80,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
               ));
               if (context.mounted) Navigator.pop(context, true);
             },
-            child: const Text('Ajouter'),
+            child: Text(tr(lang, 'common_add')),
           ),
         ],
       ),
@@ -86,21 +90,22 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
   }
 
   Future<void> _confirmDelete(Supplier supplier) async {
+    final lang = context.read<LocaleProvider>().language;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Supprimer ce fournisseur ?'),
+        title: Text(tr(lang, 'suppliers_delete_title')),
         content: Text(
             '${supplier.name} sera retiré de la liste. Cette action est irréversible.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annuler'),
+            child: Text(tr(lang, 'common_cancel')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child:
-                const Text('Supprimer', style: TextStyle(color: AppColors.danger)),
+                Text(tr(lang, 'common_delete'), style: const TextStyle(color: AppColors.danger)),
           ),
         ],
       ),
@@ -113,9 +118,10 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = context.watch<LocaleProvider>().language;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Fournisseurs'),
+        title: Text(tr(lang, 'suppliers_title')),
       ),
       body: _suppliers.isEmpty
           ? Center(
@@ -125,7 +131,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                   const Icon(Icons.local_shipping_outlined,
                       size: 40, color: AppColors.textSecondary),
                   const SizedBox(height: 8),
-                  Text('Aucun fournisseur enregistré',
+                  Text(tr(lang, 'suppliers_empty'),
                       style: TextStyle(color: AppColors.textSecondary)),
                 ],
               ),
@@ -187,7 +193,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
         onPressed: _openAddDialog,
         backgroundColor: AppColors.navy,
         icon: const Icon(Icons.add_rounded),
-        label: const Text('Ajouter'),
+        label: Text(tr(lang, 'common_add')),
       ),
     );
   }

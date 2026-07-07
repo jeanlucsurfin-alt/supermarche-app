@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/expense.dart';
+import '../providers/locale_provider.dart';
+import '../l10n/translations.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/fafoutt_logo.dart';
@@ -68,24 +71,25 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
   Future<void> _addNewCategory(
       BuildContext dialogContext, StateSetter setDialogState,
       List<String> categoryOptions, ValueChanged<String> onCreated) async {
+    final lang = context.read<LocaleProvider>().language;
     final controller = TextEditingController();
     final created = await showDialog<String>(
       context: dialogContext,
       builder: (context) => AlertDialog(
-        title: const Text('Nouvelle catégorie'),
+        title: Text(tr(lang, 'expenses_new_category')),
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(labelText: 'Nom de la catégorie'),
+          decoration: InputDecoration(labelText: tr(lang, 'expenses_category_name')),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Annuler'),
+            child: Text(tr(lang, 'common_cancel')),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('Créer'),
+            child: Text(tr(lang, 'expenses_create')),
           ),
         ],
       ),
@@ -102,8 +106,8 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
     if (!success) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Cette catégorie existe déjà'),
+          SnackBar(
+            content: Text(tr(lang, 'expenses_category_exists')),
             backgroundColor: AppColors.danger,
           ),
         );
@@ -116,6 +120,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
   }
 
   Future<void> _openAddDialog() async {
+    final lang = context.read<LocaleProvider>().language;
     final categoryOptions = await _db.getExpenseCategories();
     String? selectedCategory =
         categoryOptions.isNotEmpty ? categoryOptions.first : null;
@@ -127,7 +132,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Nouvelle dépense'),
+          title: Text(tr(lang, 'expenses_new_expense')),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -138,7 +143,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                     Expanded(
                       child: DropdownButtonFormField<String>(
                         value: selectedCategory,
-                        decoration: const InputDecoration(labelText: 'Catégorie'),
+                        decoration: InputDecoration(labelText: tr(lang, 'expenses_category')),
                         items: categoryOptions
                             .map((c) =>
                                 DropdownMenuItem(value: c, child: Text(c)))
@@ -150,7 +155,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                     IconButton(
                       icon: const Icon(Icons.add_circle_outline,
                           color: AppColors.navy),
-                      tooltip: 'Nouvelle catégorie',
+                      tooltip: tr(lang, 'expenses_new_category'),
                       onPressed: () => _addNewCategory(
                         context,
                         setDialogState,
@@ -164,7 +169,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                 const SizedBox(height: 12),
                 TextField(
                   controller: amountController,
-                  decoration: const InputDecoration(labelText: 'Montant (HTG)'),
+                  decoration: InputDecoration(labelText: tr(lang, 'expenses_amount')),
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
                   autofocus: true,
@@ -183,7 +188,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                     }
                   },
                   child: InputDecorator(
-                    decoration: const InputDecoration(labelText: 'Date'),
+                    decoration: InputDecoration(labelText: tr(lang, 'expenses_date')),
                     child: Text(_dateFormat.format(selectedDate)),
                   ),
                 ),
@@ -191,7 +196,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                 TextField(
                   controller: noteController,
                   decoration:
-                      const InputDecoration(labelText: 'Note (optionnel)'),
+                      InputDecoration(labelText: tr(lang, 'expenses_note')),
                 ),
               ],
             ),
@@ -199,15 +204,15 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Annuler'),
+              child: Text(tr(lang, 'common_cancel')),
             ),
             ElevatedButton(
               onPressed: () async {
                 final amount = double.tryParse(amountController.text);
                 if (amount == null || amount <= 0) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Montant invalide'),
+                    SnackBar(
+                      content: Text(tr(lang, 'expenses_invalid_amount')),
                       backgroundColor: AppColors.danger,
                     ),
                   );
@@ -215,8 +220,8 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                 }
                 if (selectedCategory == null) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Sélectionnez ou créez une catégorie'),
+                    SnackBar(
+                      content: Text(tr(lang, 'expenses_select_category')),
                       backgroundColor: AppColors.danger,
                     ),
                   );
@@ -232,7 +237,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                 ));
                 if (context.mounted) Navigator.pop(context, true);
               },
-              child: const Text('Ajouter'),
+              child: Text(tr(lang, 'common_add')),
             ),
           ],
         ),
@@ -243,21 +248,22 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
   }
 
   Future<void> _confirmDelete(Expense expense) async {
+    final lang = context.read<LocaleProvider>().language;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Supprimer cette dépense ?'),
+        title: Text(tr(lang, 'expenses_delete_title')),
         content: Text(
-            '${expense.category} · ${_currencyFormat.format(expense.amount)} sera supprimée.'),
+            '${expense.category} · ${_currencyFormat.format(expense.amount)} ${tr(lang, 'expenses_delete_content_suffix')}'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annuler'),
+            child: Text(tr(lang, 'common_cancel')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Supprimer',
-                style: TextStyle(color: AppColors.danger)),
+            child: Text(tr(lang, 'common_delete'),
+                style: const TextStyle(color: AppColors.danger)),
           ),
         ],
       ),
@@ -270,9 +276,10 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = context.watch<LocaleProvider>().language;
     return Scaffold(
       appBar: AppBar(
-        title: const FafouttHeader(subtitle: 'Dépenses du magasin'),
+        title: FafouttHeader(subtitle: tr(lang, 'expenses_subtitle')),
         actions: const [LogoutButton(), SizedBox(width: 4)],
       ),
       body: _loading
@@ -305,8 +312,8 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Total des dépenses (90 jours)',
-                                style: TextStyle(
+                            Text(tr(lang, 'expenses_total_90days'),
+                                style: const TextStyle(
                                     color: AppColors.textSecondary,
                                     fontSize: 12)),
                             Text(
@@ -326,7 +333,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 40),
                       child: Center(
-                        child: Text('Aucune dépense enregistrée',
+                        child: Text(tr(lang, 'expenses_empty'),
                             style: TextStyle(color: AppColors.textSecondary)),
                       ),
                     )
@@ -380,7 +387,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
         onPressed: _openAddDialog,
         backgroundColor: AppColors.navy,
         icon: const Icon(Icons.add_rounded),
-        label: const Text('Ajouter'),
+        label: Text(tr(lang, 'common_add')),
       ),
     );
   }

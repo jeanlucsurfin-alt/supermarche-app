@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/credit_payment.dart';
+import '../providers/locale_provider.dart';
+import '../l10n/translations.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/currency.dart';
@@ -51,8 +54,9 @@ class _CreditScreenState extends State<CreditScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = context.watch<LocaleProvider>().language;
     return Scaffold(
-      appBar: AppBar(title: const Text('Créances')),
+      appBar: AppBar(title: Text(tr(lang, 'credit_title'))),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
@@ -84,8 +88,8 @@ class _CreditScreenState extends State<CreditScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Total des créances en cours',
-                                  style: TextStyle(
+                              Text(tr(lang, 'credit_total_outstanding'),
+                                  style: const TextStyle(
                                       color: AppColors.textSecondary,
                                       fontSize: 12)),
                               Text(
@@ -111,7 +115,7 @@ class _CreditScreenState extends State<CreditScreen> {
                             const Icon(Icons.check_circle_outline_rounded,
                                 size: 40, color: AppColors.success),
                             const SizedBox(height: 8),
-                            Text('Aucune créance en cours',
+                            Text(tr(lang, 'credit_none'),
                                 style: TextStyle(
                                     color: AppColors.textSecondary)),
                           ],
@@ -200,44 +204,45 @@ class _CreditDetailSheetState extends State<_CreditDetailSheet> {
   }
 
   Future<void> _openRepaymentDialog() async {
+    final lang = context.read<LocaleProvider>().language;
     final amountController = TextEditingController();
     final noteController = TextEditingController();
 
     final saved = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Enregistrer un remboursement'),
+        title: Text(tr(lang, 'credit_repayment_dialog_title')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Solde actuel : ${formatHTG(_balance)}',
+            Text('${tr(lang, 'credit_current_balance')} : ${formatHTG(_balance)}',
                 style: const TextStyle(color: AppColors.textSecondary)),
             const SizedBox(height: 12),
             TextField(
               controller: amountController,
-              decoration: const InputDecoration(labelText: 'Montant reçu (HTG)'),
+              decoration: InputDecoration(labelText: tr(lang, 'credit_amount_received')),
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               autofocus: true,
             ),
             const SizedBox(height: 12),
             TextField(
               controller: noteController,
-              decoration: const InputDecoration(labelText: 'Note (optionnel)'),
+              decoration: InputDecoration(labelText: tr(lang, 'credit_note')),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annuler'),
+            child: Text(tr(lang, 'common_cancel')),
           ),
           ElevatedButton(
             onPressed: () async {
               final amount = double.tryParse(amountController.text);
               if (amount == null || amount <= 0) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Montant invalide'),
+                  SnackBar(
+                    content: Text(tr(lang, 'credit_invalid_amount')),
                     backgroundColor: AppColors.danger,
                   ),
                 );
@@ -251,7 +256,7 @@ class _CreditDetailSheetState extends State<_CreditDetailSheet> {
               ));
               if (context.mounted) Navigator.pop(context, true);
             },
-            child: const Text('Enregistrer'),
+            child: Text(tr(lang, 'common_save')),
           ),
         ],
       ),
@@ -262,6 +267,7 @@ class _CreditDetailSheetState extends State<_CreditDetailSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = context.watch<LocaleProvider>().language;
     return DraggableScrollableSheet(
       initialChildSize: 0.75,
       minChildSize: 0.4,
@@ -302,8 +308,8 @@ class _CreditDetailSheetState extends State<_CreditDetailSheet> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('Solde dû',
-                                  style: TextStyle(fontWeight: FontWeight.w600)),
+                              Text(tr(lang, 'credit_due_balance'),
+                                  style: const TextStyle(fontWeight: FontWeight.w600)),
                               Text(
                                 formatHTG(_balance),
                                 style: const TextStyle(
@@ -321,7 +327,7 @@ class _CreditDetailSheetState extends State<_CreditDetailSheet> {
                           child: ElevatedButton.icon(
                             onPressed: _openRepaymentDialog,
                             icon: const Icon(Icons.payments_rounded, size: 18),
-                            label: const Text('ENREGISTRER UN REMBOURSEMENT'),
+                            label: Text(tr(lang, 'credit_register_repayment')),
                           ),
                         ),
                       ],
@@ -333,13 +339,13 @@ class _CreditDetailSheetState extends State<_CreditDetailSheet> {
                       controller: scrollController,
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       children: [
-                        Text('Ventes à crédit',
+                        Text(tr(lang, 'credit_sales'),
                             style: Theme.of(context).textTheme.titleMedium),
                         const SizedBox(height: 8),
                         if (_creditSales.isEmpty)
                           Padding(
                             padding: const EdgeInsets.only(bottom: 16),
-                            child: Text('Aucune',
+                            child: Text(tr(lang, 'credit_none_short'),
                                 style:
                                     TextStyle(color: AppColors.textSecondary)),
                           )
@@ -370,13 +376,13 @@ class _CreditDetailSheetState extends State<_CreditDetailSheet> {
                             );
                           }),
                         const SizedBox(height: 16),
-                        Text('Remboursements',
+                        Text(tr(lang, 'credit_repayments'),
                             style: Theme.of(context).textTheme.titleMedium),
                         const SizedBox(height: 8),
                         if (_payments.isEmpty)
                           Padding(
                             padding: const EdgeInsets.only(bottom: 16),
-                            child: Text('Aucun remboursement enregistré',
+                            child: Text(tr(lang, 'credit_no_repayment'),
                                 style:
                                     TextStyle(color: AppColors.textSecondary)),
                           )
