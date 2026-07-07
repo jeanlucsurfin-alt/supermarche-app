@@ -63,6 +63,22 @@ const Map<String, Map<String, String>> kTranslations = {
     'payment_card': 'Carte',
     'payment_mobile_money': 'Mobile Money',
     'payment_credit': 'Crédit',
+
+    // Employés
+    'employees_title': 'Employés',
+    'employees_empty': 'Aucun employé enregistré',
+    'employees_new': 'Nouvel employé',
+    'employees_edit': 'Modifier l\'employé',
+    'employees_full_name': 'Nom complet',
+    'employees_role': 'Rôle',
+    'employees_pin': 'Code PIN (4 chiffres)',
+    'employees_recent_history': 'Historique récent',
+    'employees_no_shift': 'Aucun pointage enregistré',
+    'employees_delete_title': 'Supprimer cet employé ?',
+    'common_add': 'Ajouter',
+    'common_save': 'Enregistrer',
+    'common_cancel': 'Annuler',
+    'common_delete': 'Supprimer',
   },
   'ht': {
     // Navigasyon
@@ -125,6 +141,22 @@ const Map<String, Map<String, String>> kTranslations = {
     'payment_card': 'Kat',
     'payment_mobile_money': 'Mobile Money',
     'payment_credit': 'Kredi',
+
+    // Anplwaye
+    'employees_title': 'Anplwaye',
+    'employees_empty': 'Pa gen anplwaye anrejistre',
+    'employees_new': 'Nouvo anplwaye',
+    'employees_edit': 'Modifye anplwaye a',
+    'employees_full_name': 'Non konplè',
+    'employees_role': 'Wòl',
+    'employees_pin': 'Kòd PIN (4 chif)',
+    'employees_recent_history': 'Istwa resan',
+    'employees_no_shift': 'Pa gen pwentaj anrejistre',
+    'employees_delete_title': 'Efase anplwaye sa a ?',
+    'common_add': 'Ajoute',
+    'common_save': 'Anrejistre',
+    'common_cancel': 'Anile',
+    'common_delete': 'Efase',
   },
 };
 

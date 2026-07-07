@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../models/employee.dart';
 import '../models/employee_shift.dart';
 import '../providers/session_provider.dart';
+import '../providers/locale_provider.dart';
+import '../l10n/translations.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 
@@ -41,6 +43,7 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
   }
 
   Future<void> _openEditDialog({Employee? employee}) async {
+    final lang = context.read<LocaleProvider>().language;
     final nameController = TextEditingController(text: employee?.name ?? '');
     final pinController = TextEditingController(text: employee?.pin ?? '');
     EmployeeRole selectedRole = employee?.role ?? EmployeeRole.caissier;
@@ -49,19 +52,22 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: Text(employee == null ? 'Nouvel employé' : 'Modifier l\'employé'),
+          title: Text(employee == null
+              ? tr(lang, 'employees_new')
+              : tr(lang, 'employees_edit')),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: nameController,
-                decoration: const InputDecoration(labelText: 'Nom complet'),
+                decoration:
+                    InputDecoration(labelText: tr(lang, 'employees_full_name')),
                 autofocus: true,
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<EmployeeRole>(
                 value: selectedRole,
-                decoration: const InputDecoration(labelText: 'Rôle'),
+                decoration: InputDecoration(labelText: tr(lang, 'employees_role')),
                 items: EmployeeRole.values
                     .map((r) =>
                         DropdownMenuItem(value: r, child: Text(r.label)))
@@ -72,8 +78,8 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
               const SizedBox(height: 12),
               TextField(
                 controller: pinController,
-                decoration: const InputDecoration(
-                    labelText: 'Code PIN (4 chiffres)'),
+                decoration:
+                    InputDecoration(labelText: tr(lang, 'employees_pin')),
                 keyboardType: TextInputType.number,
                 maxLength: 4,
                 obscureText: true,
@@ -83,7 +89,7 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Annuler'),
+              child: Text(tr(lang, 'common_cancel')),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -111,7 +117,9 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                 }
                 if (context.mounted) Navigator.pop(context, true);
               },
-              child: Text(employee == null ? 'Ajouter' : 'Enregistrer'),
+              child: Text(employee == null
+                  ? tr(lang, 'common_add')
+                  : tr(lang, 'common_save')),
             ),
           ],
         ),
@@ -122,20 +130,21 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
   }
 
   Future<void> _confirmDelete(Employee employee) async {
+    final lang = context.read<LocaleProvider>().language;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Supprimer cet employé ?'),
+        title: Text(tr(lang, 'employees_delete_title')),
         content: Text('${employee.name} sera retiré de la liste.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annuler'),
+            child: Text(tr(lang, 'common_cancel')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child:
-                const Text('Supprimer', style: TextStyle(color: AppColors.danger)),
+                Text(tr(lang, 'common_delete'), style: const TextStyle(color: AppColors.danger)),
           ),
         ],
       ),
@@ -166,13 +175,14 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = context.watch<LocaleProvider>().language;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Employés'),
+        title: Text(tr(lang, 'employees_title')),
       ),
       body: _employees.isEmpty
           ? Center(
-              child: Text('Aucun employé enregistré',
+              child: Text(tr(lang, 'employees_empty'),
                   style: TextStyle(color: AppColors.textSecondary)),
             )
           : ListView.builder(
@@ -239,7 +249,7 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
         onPressed: () => _openEditDialog(),
         backgroundColor: AppColors.navy,
         icon: const Icon(Icons.add_rounded),
-        label: const Text('Ajouter'),
+        label: Text(tr(lang, 'common_add')),
       ),
     );
   }
@@ -293,6 +303,7 @@ class _ShiftSheetState extends State<_ShiftSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = context.watch<LocaleProvider>().language;
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -366,13 +377,13 @@ class _ShiftSheetState extends State<_ShiftSheet> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                Text('Historique récent',
+                Text(tr(lang, 'employees_recent_history'),
                     style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 8),
                 if (_history.isEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    child: Text('Aucun pointage enregistré',
+                    child: Text(tr(lang, 'employees_no_shift'),
                         style: TextStyle(color: AppColors.textSecondary)),
                   )
                 else
