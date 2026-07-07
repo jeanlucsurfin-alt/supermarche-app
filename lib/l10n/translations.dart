@@ -79,6 +79,21 @@ const Map<String, Map<String, String>> kTranslations = {
     'common_save': 'Enregistrer',
     'common_cancel': 'Annuler',
     'common_delete': 'Supprimer',
+
+    // Clients
+    'customers_title': 'Clients',
+    'customers_empty': 'Aucun client enregistré',
+    'customers_new': 'Nouveau client',
+    'customers_edit': 'Modifier le client',
+    'customers_full_name': 'Nom complet',
+    'customers_phone': 'Téléphone',
+    'customers_search_hint': 'Rechercher un client ou un numéro...',
+    'customers_required_fields': 'Nom et téléphone sont obligatoires',
+    'customers_delete_title': 'Supprimer ce client ?',
+    'customers_no_purchase': 'Aucun achat enregistré',
+    'customers_points': 'points',
+    'customers_purchases': 'achats',
+    'customers_owes': 'Doit',
   },
   'ht': {
     // Navigasyon
@@ -157,6 +172,21 @@ const Map<String, Map<String, String>> kTranslations = {
     'common_save': 'Anrejistre',
     'common_cancel': 'Anile',
     'common_delete': 'Efase',
+
+    // Kliyan
+    'customers_title': 'Kliyan',
+    'customers_empty': 'Pa gen kliyan anrejistre',
+    'customers_new': 'Nouvo kliyan',
+    'customers_edit': 'Modifye kliyan an',
+    'customers_full_name': 'Non konplè',
+    'customers_phone': 'Telefòn',
+    'customers_search_hint': 'Chèche yon kliyan oswa yon nimewo...',
+    'customers_required_fields': 'Non ak telefòn obligatwa',
+    'customers_delete_title': 'Efase kliyan sa a ?',
+    'customers_no_purchase': 'Pa gen acha anrejistre',
+    'customers_points': 'pwen',
+    'customers_purchases': 'acha',
+    'customers_owes': 'Dwe',
   },
 };
 

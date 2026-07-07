@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../models/customer.dart';
 import '../providers/session_provider.dart';
+import '../providers/locale_provider.dart';
+import '../l10n/translations.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 
@@ -45,25 +47,30 @@ class _CustomersScreenState extends State<CustomersScreen> {
   }
 
   Future<void> _openEditDialog({Customer? customer}) async {
+    final lang = context.read<LocaleProvider>().language;
     final nameController = TextEditingController(text: customer?.name ?? '');
     final phoneController = TextEditingController(text: customer?.phone ?? '');
 
     final saved = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(customer == null ? 'Nouveau client' : 'Modifier le client'),
+        title: Text(customer == null
+            ? tr(lang, 'customers_new')
+            : tr(lang, 'customers_edit')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: nameController,
-              decoration: const InputDecoration(labelText: 'Nom complet'),
+              decoration:
+                  InputDecoration(labelText: tr(lang, 'customers_full_name')),
               autofocus: true,
             ),
             const SizedBox(height: 12),
             TextField(
               controller: phoneController,
-              decoration: const InputDecoration(labelText: 'Téléphone'),
+              decoration:
+                  InputDecoration(labelText: tr(lang, 'customers_phone')),
               keyboardType: TextInputType.phone,
             ),
           ],
@@ -71,15 +78,15 @@ class _CustomersScreenState extends State<CustomersScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annuler'),
+            child: Text(tr(lang, 'common_cancel')),
           ),
           ElevatedButton(
             onPressed: () async {
               if (nameController.text.trim().isEmpty ||
                   phoneController.text.trim().isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Nom et téléphone sont obligatoires'),
+                  SnackBar(
+                    content: Text(tr(lang, 'customers_required_fields')),
                     backgroundColor: AppColors.danger,
                   ),
                 );
@@ -98,7 +105,9 @@ class _CustomersScreenState extends State<CustomersScreen> {
               }
               if (context.mounted) Navigator.pop(context, true);
             },
-            child: Text(customer == null ? 'Ajouter' : 'Enregistrer'),
+            child: Text(customer == null
+                ? tr(lang, 'common_add')
+                : tr(lang, 'common_save')),
           ),
         ],
       ),
@@ -108,20 +117,21 @@ class _CustomersScreenState extends State<CustomersScreen> {
   }
 
   Future<void> _confirmDelete(Customer customer) async {
+    final lang = context.read<LocaleProvider>().language;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Supprimer ce client ?'),
+        title: Text(tr(lang, 'customers_delete_title')),
         content: Text('${customer.name} sera retiré de la liste.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annuler'),
+            child: Text(tr(lang, 'common_cancel')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child:
-                const Text('Supprimer', style: TextStyle(color: AppColors.danger)),
+                Text(tr(lang, 'common_delete'), style: const TextStyle(color: AppColors.danger)),
           ),
         ],
       ),
@@ -152,9 +162,10 @@ class _CustomersScreenState extends State<CustomersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = context.watch<LocaleProvider>().language;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Clients'),
+        title: Text(tr(lang, 'customers_title')),
       ),
       body: Column(
         children: [
@@ -163,7 +174,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Rechercher un client ou un numéro...',
+                hintText: tr(lang, 'customers_search_hint'),
                 prefixIcon: const Icon(Icons.search_rounded,
                     color: AppColors.textSecondary),
               ),
@@ -173,7 +184,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
           Expanded(
             child: _filtered.isEmpty
                 ? Center(
-                    child: Text('Aucun client enregistré',
+                    child: Text(tr(lang, 'customers_empty'),
                         style: TextStyle(color: AppColors.textSecondary)),
                   )
                 : ListView.builder(
@@ -244,7 +255,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
         onPressed: () => _openEditDialog(),
         backgroundColor: AppColors.navy,
         icon: const Icon(Icons.add_rounded),
-        label: const Text('Ajouter'),
+        label: Text(tr(lang, 'common_add')),
       ),
     );
   }
@@ -289,6 +300,7 @@ class _CustomerHistorySheetState extends State<_CustomerHistorySheet> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = context.watch<LocaleProvider>().language;
     return DraggableScrollableSheet(
       initialChildSize: 0.75,
       minChildSize: 0.4,
@@ -330,12 +342,12 @@ class _CustomerHistorySheetState extends State<_CustomerHistorySheet> {
                             _StatChip(
                               icon: Icons.star_rounded,
                               label:
-                                  '${widget.customer.loyaltyPoints} points',
+                                  '${widget.customer.loyaltyPoints} ${tr(lang, 'customers_points')}',
                               color: AppColors.gold,
                             ),
                             _StatChip(
                               icon: Icons.receipt_long_rounded,
-                              label: '${_sales.length} achats',
+                              label: '${_sales.length} ${tr(lang, 'customers_purchases')}',
                               color: AppColors.blue,
                             ),
                             _StatChip(
@@ -348,7 +360,7 @@ class _CustomerHistorySheetState extends State<_CustomerHistorySheet> {
                             if (_creditBalance > 0)
                               _StatChip(
                                 icon: Icons.schedule_rounded,
-                                label: 'Doit ${_currencyFormat.format(_creditBalance).replaceAll(' ', '\u00A0')}',
+                                label: '${tr(lang, 'customers_owes')} ${_currencyFormat.format(_creditBalance).replaceAll(' ', '\u00A0')}',
                                 color: AppColors.danger,
                               ),
                           ],
@@ -360,7 +372,7 @@ class _CustomerHistorySheetState extends State<_CustomerHistorySheet> {
                   Expanded(
                     child: _sales.isEmpty
                         ? Center(
-                            child: Text('Aucun achat enregistré',
+                            child: Text(tr(lang, 'customers_no_purchase'),
                                 style: TextStyle(
                                     color: AppColors.textSecondary)),
                           )
