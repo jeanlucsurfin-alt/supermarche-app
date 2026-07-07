@@ -31,6 +31,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   int? _selectedCustomerId;
   Promotion? _appliedPromotion;
   String? _promoError;
+  bool _manualDiscountEnabled = false;
+  DiscountType _manualDiscountType = DiscountType.percentage;
+  final TextEditingController _manualDiscountValueController =
+      TextEditingController();
 
   @override
   void initState() {
@@ -66,9 +70,27 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     });
   }
 
-  double _discountAmount(double subtotal) {
+  double _promoDiscountAmount(double subtotal) {
     if (_appliedPromotion == null) return 0;
     return subtotal - _appliedPromotion!.applyTo(subtotal);
+  }
+
+  double _manualDiscountAmount(double remainingAfterPromo) {
+    if (!_manualDiscountEnabled) return 0;
+    final value = double.tryParse(_manualDiscountValueController.text) ?? 0;
+    if (value <= 0) return 0;
+    final amount = _manualDiscountType == DiscountType.percentage
+        ? remainingAfterPromo * value / 100
+        : value;
+    return amount > remainingAfterPromo ? remainingAfterPromo : amount;
+  }
+
+  /// Remise totale (code promo + remise manuelle éventuelle), plafonnée
+  /// pour ne jamais dépasser le sous-total.
+  double _discountAmount(double subtotal) {
+    final promo = _promoDiscountAmount(subtotal);
+    final manual = _manualDiscountAmount(subtotal - promo);
+    return promo + manual;
   }
 
   @override
@@ -184,6 +206,71 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         ),
                 ),
               ],
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text('Remise manuelle (sans code)',
+                            style: const TextStyle(fontWeight: FontWeight.w600)),
+                      ),
+                      Switch(
+                        value: _manualDiscountEnabled,
+                        activeColor: AppColors.navy,
+                        onChanged: (v) =>
+                            setState(() => _manualDiscountEnabled = v),
+                      ),
+                    ],
+                  ),
+                  if (_manualDiscountEnabled) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SegmentedButton<DiscountType>(
+                            segments: const [
+                              ButtonSegment(
+                                  value: DiscountType.percentage,
+                                  label: Text('%')),
+                              ButtonSegment(
+                                  value: DiscountType.fixedAmount,
+                                  label: Text('HTG')),
+                            ],
+                            selected: {_manualDiscountType},
+                            onSelectionChanged: (s) => setState(
+                                () => _manualDiscountType = s.first),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: TextField(
+                            controller: _manualDiscountValueController,
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
+                            decoration: InputDecoration(
+                              labelText: _manualDiscountType ==
+                                      DiscountType.percentage
+                                  ? 'Réduction (%)'
+                                  : 'Réduction (HTG)',
+                              isDense: true,
+                            ),
+                            onChanged: (_) => setState(() {}),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
             ),
             const SizedBox(height: 20),
             Text(isCredit ? 'Client (obligatoire pour le crédit)' : 'Client (optionnel)',
