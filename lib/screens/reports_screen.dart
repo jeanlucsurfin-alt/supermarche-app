@@ -1,11 +1,14 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart' show Share, XFile;
+import '../providers/locale_provider.dart';
+import '../l10n/translations.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/fafoutt_logo.dart';
@@ -96,15 +99,16 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   String _paymentLabel(String method) {
+    final lang = context.read<LocaleProvider>().language;
     switch (method) {
       case 'cash':
-        return 'Cash';
+        return tr(lang, 'payment_cash');
       case 'card':
-        return 'Carte';
+        return tr(lang, 'payment_card');
       case 'mobileMoney':
-        return 'Mobile Money';
+        return tr(lang, 'payment_mobile_money');
       case 'credit':
-        return 'Crédit';
+        return tr(lang, 'payment_credit');
       default:
         return method;
     }
@@ -187,10 +191,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = context.watch<LocaleProvider>().language;
     return Scaffold(
       appBar: AppBar(
-        title: const FafouttHeader(
-          subtitle: 'Rapports de ventes',
+        title: FafouttHeader(
+          subtitle: tr(lang, 'reports_subtitle'),
           enableMenu: true,
         ),
         actions: [
@@ -201,14 +206,14 @@ class _ReportsScreenState extends State<ReportsScreen> {
               if (value == 'pdf') _exportPdf();
               if (value == 'csv') _exportCsv();
             },
-            itemBuilder: (context) => const [
+            itemBuilder: (context) => [
               PopupMenuItem(
                 value: 'pdf',
                 child: Row(
                   children: [
-                    Icon(Icons.picture_as_pdf_outlined, size: 18),
-                    SizedBox(width: 10),
-                    Text('Exporter en PDF'),
+                    const Icon(Icons.picture_as_pdf_outlined, size: 18),
+                    const SizedBox(width: 10),
+                    Text(tr(lang, 'reports_export_pdf')),
                   ],
                 ),
               ),
@@ -216,9 +221,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 value: 'csv',
                 child: Row(
                   children: [
-                    Icon(Icons.table_chart_outlined, size: 18),
-                    SizedBox(width: 10),
-                    Text('Exporter en Excel (CSV)'),
+                    const Icon(Icons.table_chart_outlined, size: 18),
+                    const SizedBox(width: 10),
+                    Text(tr(lang, 'reports_export_csv')),
                   ],
                 ),
               ),
@@ -238,7 +243,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 scrollDirection: Axis.horizontal,
                 children: [
                   _PeriodChip(
-                    label: 'Aujourd\'hui',
+                    label: tr(lang, 'reports_filter_today'),
                     selected: _period == ReportPeriod.today,
                     onTap: () {
                       setState(() => _period = ReportPeriod.today);
@@ -247,7 +252,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   ),
                   const SizedBox(width: 8),
                   _PeriodChip(
-                    label: '7 derniers jours',
+                    label: tr(lang, 'reports_filter_week'),
                     selected: _period == ReportPeriod.week,
                     onTap: () {
                       setState(() => _period = ReportPeriod.week);
@@ -256,7 +261,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   ),
                   const SizedBox(width: 8),
                   _PeriodChip(
-                    label: 'Ce mois',
+                    label: tr(lang, 'reports_filter_month'),
                     selected: _period == ReportPeriod.month,
                     onTap: () {
                       setState(() => _period = ReportPeriod.month);
@@ -267,7 +272,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   _PeriodChip(
                     label: _period == ReportPeriod.custom
                         ? '${_dateFormat.format(_customStart)} - ${_dateFormat.format(_customEnd)}'
-                        : 'Personnalisé',
+                        : tr(lang, 'reports_filter_custom'),
                     selected: _period == ReportPeriod.custom,
                     icon: Icons.calendar_today_rounded,
                     onTap: _pickCustomRange,
@@ -315,8 +320,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Total des créances en cours',
-                                style: TextStyle(
+                            Text(tr(lang, 'reports_total_outstanding_credit'),
+                                style: const TextStyle(
                                     color: AppColors.textSecondary,
                                     fontSize: 11)),
                             Text(
@@ -346,70 +351,70 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 children: [
                   _StatCard(
                     icon: Icons.payments_rounded,
-                    label: 'Chiffre d\'affaires',
+                    label: tr(lang, 'reports_revenue'),
                     value: _currencyFormat.format(_summary['revenue']),
                     color: AppColors.navy,
                   ),
                   _StatCard(
                     icon: Icons.receipt_long_rounded,
-                    label: 'Nombre de ventes',
+                    label: tr(lang, 'reports_transaction_count'),
                     value: '${_summary['transactionCount']!.toInt()}',
                     color: AppColors.blue,
                   ),
                   _StatCard(
                     icon: Icons.trending_up_rounded,
-                    label: 'Bénéfice réalisé',
+                    label: tr(lang, 'reports_realized_profit'),
                     value: _currencyFormat.format(_summary['realizedProfit']),
                     color: AppColors.success,
                   ),
                   _StatCard(
                     icon: Icons.hourglass_bottom_rounded,
-                    label: 'Bénéfice en attente (crédit)',
+                    label: tr(lang, 'reports_pending_profit'),
                     value: _currencyFormat.format(_summary['pendingProfit']),
                     color: AppColors.danger,
                   ),
                   _StatCard(
                     icon: Icons.shopping_basket_rounded,
-                    label: 'Panier moyen',
+                    label: tr(lang, 'reports_average_basket'),
                     value: _currencyFormat.format(_summary['averageBasket']),
                     color: AppColors.gold,
                   ),
                   _StatCard(
                     icon: Icons.credit_score_rounded,
-                    label: 'Crédit accordé (période)',
+                    label: tr(lang, 'reports_credit_granted'),
                     value:
                         _currencyFormat.format(_summary['pendingCreditAmount']),
                     color: AppColors.danger,
                   ),
                   _StatCard(
                     icon: Icons.undo_rounded,
-                    label: 'Retours (période)',
+                    label: tr(lang, 'reports_returns_period'),
                     value: '- ${_currencyFormat.format(_summary['returnsTotal'])}',
                     color: AppColors.danger,
                   ),
                   _StatCard(
                     icon: Icons.money_off_rounded,
-                    label: 'Dépenses (période)',
+                    label: tr(lang, 'reports_expenses_period'),
                     value: '- ${_currencyFormat.format(_summary['totalExpenses'])}',
                     color: AppColors.danger,
                   ),
                   _StatCard(
                     icon: Icons.account_balance_wallet_rounded,
-                    label: 'Bénéfice net',
+                    label: tr(lang, 'reports_net_profit'),
                     value: _currencyFormat.format(_summary['netProfit']),
                     color: AppColors.success,
                   ),
                 ],
               ),
               const SizedBox(height: 24),
-              Text('Produits les plus vendus',
+              Text(tr(lang, 'reports_top_products'),
                   style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 12),
               if (_topProducts.isEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 20),
                   child: Center(
-                    child: Text('Aucune vente sur cette période',
+                    child: Text(tr(lang, 'reports_no_sales_period'),
                         style: TextStyle(color: AppColors.textSecondary)),
                   ),
                 )
@@ -469,14 +474,14 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   ),
                 ),
               const SizedBox(height: 24),
-              Text('Ventes par mode de paiement',
+              Text(tr(lang, 'reports_payment_methods'),
                   style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 12),
               if (_byPaymentMethod.isEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 20),
                   child: Center(
-                    child: Text('Aucune donnée',
+                    child: Text(tr(lang, 'reports_no_data'),
                         style: TextStyle(color: AppColors.textSecondary)),
                   ),
                 )
@@ -488,7 +493,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         leading: const Icon(Icons.payment_rounded,
                             color: AppColors.navy, size: 20),
                         title: Text(_paymentLabel(row['paymentMethod'])),
-                        subtitle: Text('${row['cnt']} vente(s)'),
+                        subtitle:
+                            Text('${row['cnt']} ${tr(lang, 'reports_sales_suffix')}'),
                         trailing: Text(
                           _currencyFormat.format(row['revenue']),
                           style: const TextStyle(fontWeight: FontWeight.w700),
