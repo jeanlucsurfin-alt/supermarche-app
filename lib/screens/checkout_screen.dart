@@ -425,6 +425,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final greyText = PdfColor.fromInt(0xFF6B7280);
     final lightGrey = PdfColor.fromInt(0xFFEBEDF2);
 
+    final settings = await _db.getAllSettings();
+    final storeName = (settings['storeName'] ?? '').trim().isEmpty
+        ? 'FAFOUTT STORE'
+        : settings['storeName']!.toUpperCase();
+    final storeAddress = settings['storeAddress'] ?? '';
+    final storePhone = settings['storePhone'] ?? '';
+
     final receiptNumber =
         'FS-${sale.date.millisecondsSinceEpoch.toString().substring(6)}';
     final dateLabel = DateFormat('dd/MM/yyyy à HH:mm').format(sale.date);
@@ -444,7 +451,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               child: pw.Column(
                 children: [
                   pw.Text(
-                    'FAFOUTT STORE',
+                    storeName,
                     textAlign: pw.TextAlign.center,
                     style: pw.TextStyle(
                       fontSize: 18,
@@ -459,6 +466,22 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     textAlign: pw.TextAlign.center,
                     style: pw.TextStyle(fontSize: 9, color: greyText),
                   ),
+                  if (storeAddress.isNotEmpty) ...[
+                    pw.SizedBox(height: 2),
+                    pw.Text(
+                      storeAddress,
+                      textAlign: pw.TextAlign.center,
+                      style: pw.TextStyle(fontSize: 8, color: greyText),
+                    ),
+                  ],
+                  if (storePhone.isNotEmpty) ...[
+                    pw.SizedBox(height: 2),
+                    pw.Text(
+                      'Tél : $storePhone',
+                      textAlign: pw.TextAlign.center,
+                      style: pw.TextStyle(fontSize: 8, color: greyText),
+                    ),
+                  ],
                 ],
               ),
             ),

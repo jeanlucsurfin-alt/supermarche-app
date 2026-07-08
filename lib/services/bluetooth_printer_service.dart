@@ -98,9 +98,21 @@ class BluetoothPrinterService {
     if (!connected) return false;
 
     try {
+      final storeName = await _db.getSetting('storeName');
+      final storeAddress = await _db.getSetting('storeAddress');
+      final storePhone = await _db.getSetting('storePhone');
+
       final lines = <String>[];
-      lines.add('FAFOUTT STORE');
+      lines.add((storeName == null || storeName.trim().isEmpty)
+          ? 'FAFOUTT STORE'
+          : storeName.toUpperCase());
       lines.add('Point de Vente');
+      if (storeAddress != null && storeAddress.isNotEmpty) {
+        lines.add(storeAddress);
+      }
+      if (storePhone != null && storePhone.isNotEmpty) {
+        lines.add('Tél : $storePhone');
+      }
       lines.add('--------------------------------');
       lines.add(_line('Date', _formatDate(sale.date)));
       lines.add(_line('Devise', sale.currency));
