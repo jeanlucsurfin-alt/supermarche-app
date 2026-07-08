@@ -171,8 +171,8 @@ class _StockScreenState extends State<StockScreen> {
                   },
                   avatar: Icon(Icons.warning_amber_rounded,
                       size: 16,
-                      color: _lowStockOnly ? Colors.white : AppColors.danger),
-                  selectedColor: AppColors.danger,
+                      color: _lowStockOnly ? Colors.white : AppColors.clay),
+                  selectedColor: AppColors.clay,
                   labelStyle: TextStyle(
                     color: _lowStockOnly ? Colors.white : AppColors.textPrimary,
                     fontWeight: FontWeight.w600,
@@ -180,11 +180,11 @@ class _StockScreenState extends State<StockScreen> {
                   ),
                   backgroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(AppRadius.chip),
                     side: BorderSide(
                       color: _lowStockOnly
-                          ? AppColors.danger
-                          : const Color(0xFFE3E6EC),
+                          ? AppColors.clay
+                          : const Color(0xFFE6DFD5),
                     ),
                   ),
                 ),
@@ -246,7 +246,7 @@ class _StockTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadius.card),
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Row(
@@ -255,11 +255,11 @@ class _StockTile extends StatelessWidget {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: catColor.withOpacity(0.12),
+                  color: catColor,
                   borderRadius: BorderRadius.circular(11),
                 ),
                 alignment: Alignment.center,
-                child: Icon(catIcon, color: catColor, size: 20),
+                child: Icon(catIcon, color: Colors.white, size: 19),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -300,16 +300,14 @@ class _StockTile extends StatelessWidget {
                         horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
                       color: product.isLowStock
-                          ? AppColors.danger.withOpacity(0.12)
-                          : AppColors.success.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(20),
+                          ? AppColors.danger
+                          : AppColors.success,
+                      borderRadius: BorderRadius.circular(AppRadius.chip),
                     ),
                     child: Text(
                       '${product.stockQuantity} en stock',
-                      style: TextStyle(
-                        color: product.isLowStock
-                            ? AppColors.danger
-                            : AppColors.success,
+                      style: const TextStyle(
+                        color: Colors.white,
                         fontWeight: FontWeight.w700,
                         fontSize: 11,
                       ),
@@ -378,7 +376,7 @@ class _MovementSheetState extends State<_MovementSheet> {
       child: Container(
         decoration: const BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.sheet)),
         ),
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -391,7 +389,7 @@ class _MovementSheetState extends State<_MovementSheet> {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE3E6EC),
+                  color: const Color(0xFFDDD3C4),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -402,6 +400,9 @@ class _MovementSheetState extends State<_MovementSheet> {
                 style: const TextStyle(color: AppColors.textSecondary)),
             const SizedBox(height: 16),
             SegmentedButton<MovementType>(
+              style: SegmentedButton.styleFrom(
+                textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+              ),
               segments: const [
                 ButtonSegment(
                     value: MovementType.entry,

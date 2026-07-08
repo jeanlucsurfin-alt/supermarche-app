@@ -260,6 +260,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           style: Theme.of(context).textTheme.titleMedium),
                       const SizedBox(height: 12),
                       SegmentedButton<String>(
+                        style: SegmentedButton.styleFrom(
+                          textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+                        ),
                         segments: const [
                           ButtonSegment(value: 'fr', label: Text('Français')),
                           ButtonSegment(value: 'ht', label: Text('Kreyòl ayisyen')),

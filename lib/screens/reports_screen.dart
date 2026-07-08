@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
@@ -295,12 +296,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   );
                   _load();
                 },
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(AppRadius.card),
                 child: Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: AppColors.danger.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(14),
+                    color: AppColors.clayLight.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(AppRadius.card),
+                    border: Border.all(color: AppColors.clay.withOpacity(0.25)),
                   ),
                   child: Row(
                     children: [
@@ -308,12 +310,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         width: 36,
                         height: 36,
                         decoration: BoxDecoration(
-                          color: AppColors.danger.withOpacity(0.15),
+                          color: AppColors.danger,
                           borderRadius: BorderRadius.circular(10),
                         ),
                         alignment: Alignment.center,
                         child: const Icon(Icons.schedule_rounded,
-                            color: AppColors.danger, size: 18),
+                            color: Colors.white, size: 18),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -548,9 +550,9 @@ class _PeriodChip extends StatelessWidget {
         fontSize: 12,
       ),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.chip),
         side: BorderSide(
-          color: selected ? AppColors.navy : const Color(0xFFE3E6EC),
+          color: selected ? AppColors.navy : const Color(0xFFE6DFD5),
         ),
       ),
     );
@@ -580,29 +582,32 @@ class _StatCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Container(
-              width: 32,
-              height: 32,
+              width: 30,
+              height: 30,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(9),
+                color: color,
+                borderRadius: BorderRadius.circular(8),
               ),
               alignment: Alignment.center,
-              child: Icon(icon, color: color, size: 16),
+              child: Icon(icon, color: Colors.white, size: 15),
             ),
             const Spacer(),
             Text(
               value,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16,
+              style: GoogleFonts.spaceGrotesk(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 17,
+                  letterSpacing: -0.2,
                   color: AppColors.textPrimary),
             ),
             Text(
               label,
               style: const TextStyle(
-                  color: AppColors.textSecondary, fontSize: 11),
+                  color: AppColors.textSecondary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500),
             ),
           ],
         ),

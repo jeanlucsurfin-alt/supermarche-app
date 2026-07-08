@@ -301,11 +301,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             const Text('Mode de paiement', style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             SegmentedButton<PaymentMethod>(
+              style: SegmentedButton.styleFrom(
+                textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+              ),
               segments: const [
-                ButtonSegment(value: PaymentMethod.cash, label: Text('Cash'), icon: Icon(Icons.money)),
-                ButtonSegment(value: PaymentMethod.card, label: Text('Carte'), icon: Icon(Icons.credit_card)),
-                ButtonSegment(value: PaymentMethod.mobileMoney, label: Text('Mobile'), icon: Icon(Icons.phone_android)),
-                ButtonSegment(value: PaymentMethod.credit, label: Text('Crédit'), icon: Icon(Icons.schedule_rounded)),
+                ButtonSegment(value: PaymentMethod.cash, label: Text('Cash')),
+                ButtonSegment(value: PaymentMethod.card, label: Text('Carte')),
+                ButtonSegment(value: PaymentMethod.mobileMoney, label: Text('Mobile')),
+                ButtonSegment(value: PaymentMethod.credit, label: Text('Crédit')),
               ],
               selected: {_selectedMethod},
               onSelectionChanged: (s) => setState(() => _selectedMethod = s.first),
