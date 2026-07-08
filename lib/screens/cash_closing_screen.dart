@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../models/cash_closing.dart';
 import '../providers/session_provider.dart';
+import '../providers/locale_provider.dart';
+import '../l10n/translations.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/fafoutt_logo.dart';
@@ -53,13 +55,14 @@ class _CashClosingScreenState extends State<CashClosingScreen> {
   double get _difference => _countedCash - _expectedCash;
 
   Future<void> _confirmClosing() async {
+    final lang = context.read<LocaleProvider>().language;
     final employee = context.read<SessionProvider>().currentEmployee;
     if (employee == null) return;
 
     if (_countedController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Indiquez le montant compté en caisse'),
+        SnackBar(
+          content: Text(tr(lang, 'cash_closing_missing_amount')),
           backgroundColor: AppColors.danger,
         ),
       );
@@ -69,22 +72,22 @@ class _CashClosingScreenState extends State<CashClosingScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Confirmer la clôture ?'),
+        title: Text(tr(lang, 'cash_closing_confirm_title')),
         content: Text(
           _difference == 0
-              ? 'La caisse est parfaitement équilibrée.'
+              ? tr(lang, 'cash_closing_balanced_msg')
               : _difference > 0
-                  ? 'Excédent de ${_currencyFormat.format(_difference)} par rapport au calcul attendu.'
-                  : 'Manque de ${_currencyFormat.format(_difference.abs())} par rapport au calcul attendu.',
+                  ? '${tr(lang, 'cash_closing_surplus_msg')} ${_currencyFormat.format(_difference)} ${tr(lang, 'cash_closing_vs_expected')}'
+                  : '${tr(lang, 'cash_closing_shortage_msg')} ${_currencyFormat.format(_difference.abs())} ${tr(lang, 'cash_closing_vs_expected')}',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annuler'),
+            child: Text(tr(lang, 'common_cancel')),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Confirmer'),
+            child: Text(tr(lang, 'cash_closing_confirm_button')),
           ),
         ],
       ),
@@ -109,8 +112,8 @@ class _CashClosingScreenState extends State<CashClosingScreen> {
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Clôture enregistrée'),
+        SnackBar(
+          content: Text(tr(lang, 'cash_closing_saved')),
           backgroundColor: AppColors.success,
         ),
       );
@@ -125,9 +128,10 @@ class _CashClosingScreenState extends State<CashClosingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = context.watch<LocaleProvider>().language;
     return Scaffold(
       appBar: AppBar(
-        title: const FafouttHeader(subtitle: 'Clôture de caisse'),
+        title: FafouttHeader(subtitle: tr(lang, 'cash_closing_subtitle')),
         actions: const [LogoutButton(), SizedBox(width: 4)],
       ),
       body: _loading
@@ -139,8 +143,8 @@ class _CashClosingScreenState extends State<CashClosingScreen> {
                 children: [
                   Text(
                     _lastClosingDate != null
-                        ? 'Période comptée depuis la dernière clôture (${_dateFormat.format(_lastClosingDate!)})'
-                        : 'Période comptée depuis le début de la journée',
+                        ? '${tr(lang, 'cash_closing_period_since')} (${_dateFormat.format(_lastClosingDate!)})'
+                        : tr(lang, 'cash_closing_period_today'),
                     style:
                         const TextStyle(color: AppColors.textSecondary, fontSize: 12),
                   ),
@@ -153,8 +157,8 @@ class _CashClosingScreenState extends State<CashClosingScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('Montant attendu (ventes cash)',
-                                  style: TextStyle(
+                              Text(tr(lang, 'cash_closing_expected'),
+                                  style: const TextStyle(
                                       color: AppColors.textSecondary,
                                       fontSize: 13)),
                               Text(
@@ -173,8 +177,8 @@ class _CashClosingScreenState extends State<CashClosingScreen> {
                     controller: _countedController,
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(
-                        labelText: 'Montant compté en caisse (HTG)'),
+                    decoration: InputDecoration(
+                        labelText: tr(lang, 'cash_closing_counted_label')),
                     onChanged: (_) => setState(() {}),
                   ),
                   const SizedBox(height: 12),
@@ -190,10 +194,10 @@ class _CashClosingScreenState extends State<CashClosingScreen> {
                         children: [
                           Text(
                             _difference == 0
-                                ? 'Caisse équilibrée'
+                                ? tr(lang, 'cash_closing_balanced')
                                 : _difference > 0
-                                    ? 'Excédent'
-                                    : 'Manquant',
+                                    ? tr(lang, 'cash_closing_surplus')
+                                    : tr(lang, 'cash_closing_shortage'),
                             style: TextStyle(
                                 fontWeight: FontWeight.w600,
                                 color: _diffColor(_difference)),
@@ -211,8 +215,8 @@ class _CashClosingScreenState extends State<CashClosingScreen> {
                   const SizedBox(height: 12),
                   TextField(
                     controller: _noteController,
-                    decoration: const InputDecoration(
-                        labelText: 'Note (optionnel, ex : explication d\'écart)'),
+                    decoration: InputDecoration(
+                        labelText: tr(lang, 'cash_closing_note')),
                   ),
                   const SizedBox(height: 16),
                   SizedBox(
@@ -227,17 +231,17 @@ class _CashClosingScreenState extends State<CashClosingScreen> {
                               child: CircularProgressIndicator(
                                   color: Colors.white, strokeWidth: 2),
                             )
-                          : const Text('ENREGISTRER LA CLÔTURE'),
+                          : Text(tr(lang, 'cash_closing_save_button')),
                     ),
                   ),
                   const SizedBox(height: 28),
-                  Text('Historique des clôtures',
+                  Text(tr(lang, 'cash_closing_history'),
                       style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 12),
                   if (_history.isEmpty)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      child: Text('Aucune clôture enregistrée',
+                      child: Text(tr(lang, 'cash_closing_no_history'),
                           style: TextStyle(color: AppColors.textSecondary)),
                     )
                   else
@@ -252,7 +256,7 @@ class _CashClosingScreenState extends State<CashClosingScreen> {
                             ),
                             title: Text(_dateFormat.format(c.date)),
                             subtitle: Text(
-                                '${c.employeeName} · Attendu ${_currencyFormat.format(c.expectedCash)} · Compté ${_currencyFormat.format(c.countedCash)}'),
+                                '${c.employeeName} · ${tr(lang, 'cash_closing_expected_short')} ${_currencyFormat.format(c.expectedCash)} · ${tr(lang, 'cash_closing_counted_short')} ${_currencyFormat.format(c.countedCash)}'),
                             trailing: Text(
                               (c.difference >= 0 ? '+' : '') +
                                   _currencyFormat.format(c.difference),

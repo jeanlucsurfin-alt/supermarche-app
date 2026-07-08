@@ -1,10 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../models/product.dart';
 import '../models/purchase_order.dart';
 import '../models/supplier.dart';
+import '../providers/locale_provider.dart';
+import '../l10n/translations.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
+
+String _statusLabel(PurchaseOrderStatus status, String lang) {
+  switch (status) {
+    case PurchaseOrderStatus.pending:
+      return tr(lang, 'orders_status_pending');
+    case PurchaseOrderStatus.partiallyReceived:
+      return tr(lang, 'orders_status_partial');
+    case PurchaseOrderStatus.received:
+      return tr(lang, 'orders_status_received');
+  }
+}
 
 class SupplierOrdersScreen extends StatefulWidget {
   final Supplier supplier;
@@ -68,6 +82,7 @@ class _SupplierOrdersScreenState extends State<SupplierOrdersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = context.watch<LocaleProvider>().language;
     return Scaffold(
       appBar: AppBar(title: Text(widget.supplier.name)),
       body: _loading
@@ -80,7 +95,7 @@ class _SupplierOrdersScreenState extends State<SupplierOrdersScreen> {
                       const Icon(Icons.receipt_long_outlined,
                           size: 40, color: AppColors.textSecondary),
                       const SizedBox(height: 8),
-                      Text('Aucun bon de commande',
+                      Text(tr(lang, 'orders_empty'),
                           style: TextStyle(color: AppColors.textSecondary)),
                     ],
                   ),
@@ -106,7 +121,7 @@ class _SupplierOrdersScreenState extends State<SupplierOrdersScreen> {
                           child: Icon(Icons.local_shipping_rounded,
                               color: color, size: 18),
                         ),
-                        title: Text('Commande #${order.id}',
+                        title: Text('${tr(lang, 'orders_order_number')} #${order.id}',
                             style:
                                 const TextStyle(fontWeight: FontWeight.w600)),
                         subtitle: Text(_dateFormat.format(order.date)),
@@ -117,7 +132,7 @@ class _SupplierOrdersScreenState extends State<SupplierOrdersScreen> {
                             color: color.withOpacity(0.12),
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: Text(order.status.label,
+                          child: Text(_statusLabel(order.status, lang),
                               style: TextStyle(
                                   color: color,
                                   fontSize: 11,
@@ -132,7 +147,7 @@ class _SupplierOrdersScreenState extends State<SupplierOrdersScreen> {
         onPressed: _openNewOrder,
         backgroundColor: AppColors.navy,
         icon: const Icon(Icons.add_rounded),
-        label: const Text('Nouveau bon'),
+        label: Text(tr(lang, 'orders_new_button')),
       ),
     );
   }
@@ -179,11 +194,12 @@ class _NewOrderSheetState extends State<_NewOrderSheet> {
   }
 
   Future<void> _save() async {
+    final lang = context.read<LocaleProvider>().language;
     final selected = _quantities.entries.where((e) => e.value > 0).toList();
     if (selected.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Ajoutez au moins un produit avec une quantité'),
+        SnackBar(
+          content: Text(tr(lang, 'orders_add_product_qty')),
           backgroundColor: AppColors.danger,
         ),
       );
@@ -215,6 +231,7 @@ class _NewOrderSheetState extends State<_NewOrderSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = context.watch<LocaleProvider>().language;
     return DraggableScrollableSheet(
       initialChildSize: 0.85,
       minChildSize: 0.5,
@@ -240,15 +257,15 @@ class _NewOrderSheetState extends State<_NewOrderSheet> {
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Text('Nouveau bon de commande',
+                    child: Text(tr(lang, 'orders_new_title'),
                         style: Theme.of(context).textTheme.titleLarge),
                   ),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
                     child: TextField(
                       controller: _searchController,
-                      decoration: const InputDecoration(
-                          hintText: 'Rechercher un produit...'),
+                      decoration: InputDecoration(
+                          hintText: tr(lang, 'orders_search_product')),
                       onChanged: _applyFilter,
                     ),
                   ),
@@ -315,7 +332,7 @@ class _NewOrderSheetState extends State<_NewOrderSheet> {
                                 child: CircularProgressIndicator(
                                     color: Colors.white, strokeWidth: 2),
                               )
-                            : const Text('CRÉER LE BON DE COMMANDE'),
+                            : Text(tr(lang, 'orders_create_button')),
                       ),
                     ),
                   ),
@@ -356,14 +373,15 @@ class _OrderDetailSheetState extends State<_OrderDetailSheet> {
   }
 
   Future<void> _receive() async {
+    final lang = context.read<LocaleProvider>().language;
     final quantities = <int, int>{
       for (final item in _items)
         if ((_toReceive[item.id] ?? 0) > 0) item.id!: _toReceive[item.id]!
     };
     if (quantities.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Indiquez au moins une quantité à réceptionner'),
+        SnackBar(
+          content: Text(tr(lang, 'orders_receive_at_least_one')),
           backgroundColor: AppColors.danger,
         ),
       );
@@ -377,6 +395,7 @@ class _OrderDetailSheetState extends State<_OrderDetailSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = context.watch<LocaleProvider>().language;
     return DraggableScrollableSheet(
       initialChildSize: 0.75,
       minChildSize: 0.4,
@@ -402,7 +421,7 @@ class _OrderDetailSheetState extends State<_OrderDetailSheet> {
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Text('Commande #${widget.order.id}',
+                    child: Text('${tr(lang, 'orders_order_number')} #${widget.order.id}',
                         style: Theme.of(context).textTheme.titleLarge),
                   ),
                   const SizedBox(height: 8),
@@ -426,7 +445,7 @@ class _OrderDetailSheetState extends State<_OrderDetailSheet> {
                                   style: const TextStyle(
                                       fontWeight: FontWeight.w600, fontSize: 13)),
                               Text(
-                                'Commandé ${item.quantityOrdered} · Reçu ${item.quantityReceived} · Restant ${item.remaining}',
+                                '${tr(lang, 'orders_ordered')} ${item.quantityOrdered} · ${tr(lang, 'orders_received')} ${item.quantityReceived} · ${tr(lang, 'orders_remaining')} ${item.remaining}',
                                 style: const TextStyle(
                                     color: AppColors.textSecondary, fontSize: 11),
                               ),
@@ -434,8 +453,8 @@ class _OrderDetailSheetState extends State<_OrderDetailSheet> {
                                 const SizedBox(height: 6),
                                 Row(
                                   children: [
-                                    const Text('Réceptionner maintenant : ',
-                                        style: TextStyle(fontSize: 12)),
+                                    Text('${tr(lang, 'orders_receive_now')} ',
+                                        style: const TextStyle(fontSize: 12)),
                                     IconButton(
                                       icon: const Icon(
                                           Icons.remove_circle_outline,
@@ -481,7 +500,7 @@ class _OrderDetailSheetState extends State<_OrderDetailSheet> {
                                 child: CircularProgressIndicator(
                                     color: Colors.white, strokeWidth: 2),
                               )
-                            : const Text('RÉCEPTIONNER'),
+                            : Text(tr(lang, 'orders_receive_button')),
                       ),
                     ),
                   ),

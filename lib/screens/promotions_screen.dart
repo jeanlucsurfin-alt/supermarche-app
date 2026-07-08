@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 import '../models/product.dart';
 import '../models/promotion.dart';
 import '../providers/category_provider.dart';
+import '../providers/locale_provider.dart';
+import '../l10n/translations.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 import 'package:provider/provider.dart';
@@ -41,18 +43,19 @@ class _PromotionsScreenState extends State<PromotionsScreen> {
         : '-${promo.discountValue.toStringAsFixed(0)} HTG';
   }
 
-  String _scopeLabel(Promotion promo) {
+  String _scopeLabel(Promotion promo, String lang) {
     switch (promo.scope) {
       case PromotionScope.product:
-        return promo.targetProductName ?? 'Produit';
+        return promo.targetProductName ?? tr(lang, 'promotions_product');
       case PromotionScope.category:
-        return promo.targetCategory ?? 'Catégorie';
+        return promo.targetCategory ?? tr(lang, 'promotions_category');
       case PromotionScope.cart:
-        return 'Code : ${promo.promoCode}';
+        return '${tr(lang, 'promo_code_prefix')} : ${promo.promoCode}';
     }
   }
 
   Future<void> _openAddDialog() async {
+    final lang = context.read<LocaleProvider>().language;
     final products = await _db.getAllProducts();
     if (!mounted) return;
     final categoryNames = context.read<CategoryProvider>().names;
@@ -68,11 +71,28 @@ class _PromotionsScreenState extends State<PromotionsScreen> {
     DateTime startDate = DateTime.now();
     DateTime endDate = DateTime.now().add(const Duration(days: 7));
 
+    String scopeLabel(PromotionScope s) {
+      switch (s) {
+        case PromotionScope.product:
+          return tr(lang, 'promo_scope_product');
+        case PromotionScope.category:
+          return tr(lang, 'promo_scope_category');
+        case PromotionScope.cart:
+          return tr(lang, 'promo_scope_cart');
+      }
+    }
+
+    String discountTypeLabel(DiscountType t) {
+      return t == DiscountType.percentage
+          ? tr(lang, 'promo_discount_percentage')
+          : tr(lang, 'promo_discount_fixed');
+    }
+
     final saved = await showDialog<bool>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Nouvelle promotion'),
+          title: Text(tr(lang, 'promotions_new')),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -80,15 +100,15 @@ class _PromotionsScreenState extends State<PromotionsScreen> {
               children: [
                 TextField(
                   controller: nameController,
-                  decoration: const InputDecoration(labelText: 'Nom de la promotion'),
+                  decoration: InputDecoration(labelText: tr(lang, 'promotions_name')),
                   autofocus: true,
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<PromotionScope>(
                   value: scope,
-                  decoration: const InputDecoration(labelText: 'S\'applique à'),
+                  decoration: InputDecoration(labelText: tr(lang, 'promotions_applies_to')),
                   items: PromotionScope.values
-                      .map((s) => DropdownMenuItem(value: s, child: Text(s.label)))
+                      .map((s) => DropdownMenuItem(value: s, child: Text(scopeLabel(s))))
                       .toList(),
                   onChanged: (v) =>
                       setDialogState(() => scope = v ?? scope),
@@ -97,7 +117,7 @@ class _PromotionsScreenState extends State<PromotionsScreen> {
                 if (scope == PromotionScope.product)
                   DropdownButtonFormField<Product>(
                     value: selectedProduct,
-                    decoration: const InputDecoration(labelText: 'Produit'),
+                    decoration: InputDecoration(labelText: tr(lang, 'promotions_product')),
                     items: products
                         .map((p) =>
                             DropdownMenuItem(value: p, child: Text(p.name)))
@@ -108,7 +128,7 @@ class _PromotionsScreenState extends State<PromotionsScreen> {
                 else if (scope == PromotionScope.category)
                   DropdownButtonFormField<String>(
                     value: selectedCategory,
-                    decoration: const InputDecoration(labelText: 'Catégorie'),
+                    decoration: InputDecoration(labelText: tr(lang, 'promotions_category')),
                     items: categoryNames
                         .map((c) => DropdownMenuItem(value: c, child: Text(c)))
                         .toList(),
@@ -118,17 +138,17 @@ class _PromotionsScreenState extends State<PromotionsScreen> {
                 else
                   TextField(
                     controller: codeController,
-                    decoration: const InputDecoration(
-                        labelText: 'Code promo (ex : SOLDE10)'),
+                    decoration: InputDecoration(
+                        labelText: tr(lang, 'promotions_code_hint')),
                     textCapitalization: TextCapitalization.characters,
                   ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<DiscountType>(
                   value: discountType,
-                  decoration: const InputDecoration(labelText: 'Type de réduction'),
+                  decoration: InputDecoration(labelText: tr(lang, 'promotions_discount_type')),
                   items: DiscountType.values
                       .map((t) =>
-                          DropdownMenuItem(value: t, child: Text(t.label)))
+                          DropdownMenuItem(value: t, child: Text(discountTypeLabel(t))))
                       .toList(),
                   onChanged: (v) =>
                       setDialogState(() => discountType = v ?? discountType),
@@ -138,8 +158,8 @@ class _PromotionsScreenState extends State<PromotionsScreen> {
                   controller: valueController,
                   decoration: InputDecoration(
                     labelText: discountType == DiscountType.percentage
-                        ? 'Réduction (%)'
-                        : 'Réduction (HTG)',
+                        ? tr(lang, 'promotions_discount_percent')
+                        : tr(lang, 'promotions_discount_amount'),
                   ),
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
@@ -161,7 +181,7 @@ class _PromotionsScreenState extends State<PromotionsScreen> {
                           }
                         },
                         child: InputDecorator(
-                          decoration: const InputDecoration(labelText: 'Début'),
+                          decoration: InputDecoration(labelText: tr(lang, 'promotions_start')),
                           child: Text(_dateFormat.format(startDate)),
                         ),
                       ),
@@ -181,7 +201,7 @@ class _PromotionsScreenState extends State<PromotionsScreen> {
                           }
                         },
                         child: InputDecorator(
-                          decoration: const InputDecoration(labelText: 'Fin'),
+                          decoration: InputDecoration(labelText: tr(lang, 'promotions_end')),
                           child: Text(_dateFormat.format(endDate)),
                         ),
                       ),
@@ -194,15 +214,15 @@ class _PromotionsScreenState extends State<PromotionsScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Annuler'),
+              child: Text(tr(lang, 'common_cancel')),
             ),
             ElevatedButton(
               onPressed: () async {
                 final value = double.tryParse(valueController.text);
                 if (nameController.text.trim().isEmpty || value == null || value <= 0) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Nom et valeur de réduction requis'),
+                    SnackBar(
+                      content: Text(tr(lang, 'promotions_name_value_required')),
                       backgroundColor: AppColors.danger,
                     ),
                   );
@@ -211,8 +231,8 @@ class _PromotionsScreenState extends State<PromotionsScreen> {
                 if (scope == PromotionScope.cart &&
                     codeController.text.trim().isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Un code promo est requis'),
+                    SnackBar(
+                      content: Text(tr(lang, 'promotions_code_required')),
                       backgroundColor: AppColors.danger,
                     ),
                   );
@@ -220,8 +240,8 @@ class _PromotionsScreenState extends State<PromotionsScreen> {
                 }
                 if (endDate.isBefore(startDate)) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('La date de fin doit être après le début'),
+                    SnackBar(
+                      content: Text(tr(lang, 'promotions_end_after_start')),
                       backgroundColor: AppColors.danger,
                     ),
                   );
@@ -247,7 +267,7 @@ class _PromotionsScreenState extends State<PromotionsScreen> {
                 ));
                 if (context.mounted) Navigator.pop(context, true);
               },
-              child: const Text('Créer'),
+              child: Text(tr(lang, 'promotions_create')),
             ),
           ],
         ),
@@ -258,20 +278,21 @@ class _PromotionsScreenState extends State<PromotionsScreen> {
   }
 
   Future<void> _confirmDelete(Promotion promo) async {
+    final lang = context.read<LocaleProvider>().language;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Supprimer cette promotion ?'),
-        content: Text('${promo.name} sera retirée.'),
+        title: Text(tr(lang, 'promotions_delete_title')),
+        content: Text('${promo.name} ${tr(lang, 'promotions_delete_suffix')}'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annuler'),
+            child: Text(tr(lang, 'common_cancel')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Supprimer',
-                style: TextStyle(color: AppColors.danger)),
+            child: Text(tr(lang, 'common_delete'),
+                style: const TextStyle(color: AppColors.danger)),
           ),
         ],
       ),
@@ -284,14 +305,15 @@ class _PromotionsScreenState extends State<PromotionsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = context.watch<LocaleProvider>().language;
     final now = DateTime.now();
     return Scaffold(
-      appBar: AppBar(title: const Text('Promotions')),
+      appBar: AppBar(title: Text(tr(lang, 'promotions_title'))),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _promotions.isEmpty
               ? Center(
-                  child: Text('Aucune promotion créée',
+                  child: Text(tr(lang, 'promotions_empty'),
                       style: TextStyle(color: AppColors.textSecondary)),
                 )
               : ListView.builder(
@@ -319,7 +341,7 @@ class _PromotionsScreenState extends State<PromotionsScreen> {
                         title: Text(promo.name,
                             style: const TextStyle(fontWeight: FontWeight.w600)),
                         subtitle: Text(
-                            '${_scopeLabel(promo)} · ${_dateFormat.format(promo.startDate)} - ${_dateFormat.format(promo.endDate)}',
+                            '${_scopeLabel(promo, lang)} · ${_dateFormat.format(promo.startDate)} - ${_dateFormat.format(promo.endDate)}',
                             style: const TextStyle(fontSize: 11)),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -353,7 +375,7 @@ class _PromotionsScreenState extends State<PromotionsScreen> {
         onPressed: _openAddDialog,
         backgroundColor: AppColors.navy,
         icon: const Icon(Icons.add_rounded),
-        label: const Text('Ajouter'),
+        label: Text(tr(lang, 'common_add')),
       ),
     );
   }

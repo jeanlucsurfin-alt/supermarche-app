@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../models/sale_return.dart';
 import '../providers/session_provider.dart';
+import '../providers/locale_provider.dart';
+import '../l10n/translations.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/fafoutt_logo.dart';
@@ -50,9 +52,10 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = context.watch<LocaleProvider>().language;
     return Scaffold(
       appBar: AppBar(
-        title: const FafouttHeader(subtitle: 'Retours et remboursements'),
+        title: FafouttHeader(subtitle: tr(lang, 'returns_subtitle')),
         actions: const [LogoutButton(), SizedBox(width: 4)],
       ),
       body: _loading
@@ -65,7 +68,7 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
                         Padding(
                           padding: const EdgeInsets.only(top: 60),
                           child: Center(
-                            child: Text('Aucune vente enregistrée',
+                            child: Text(tr(lang, 'returns_no_sales'),
                                 style:
                                     TextStyle(color: AppColors.textSecondary)),
                           ),
@@ -174,6 +177,7 @@ class _ReturnSheetState extends State<_ReturnSheet> {
   }
 
   Future<void> _confirmReturn() async {
+    final lang = context.read<LocaleProvider>().language;
     final employee = context.read<SessionProvider>().currentEmployee;
     if (employee == null) return;
 
@@ -193,8 +197,8 @@ class _ReturnSheetState extends State<_ReturnSheet> {
 
     if (itemsToReturn.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Sélectionnez au moins un article à retourner'),
+        SnackBar(
+          content: Text(tr(lang, 'returns_select_at_least_one')),
           backgroundColor: AppColors.danger,
         ),
       );
@@ -204,17 +208,17 @@ class _ReturnSheetState extends State<_ReturnSheet> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Confirmer le retour ?'),
+        title: Text(tr(lang, 'returns_confirm_title')),
         content: Text(
-            'Remboursement de ${_currencyFormat.format(_totalToRefund)}. Le stock des articles sera automatiquement remis à jour.'),
+            '${tr(lang, 'returns_confirm_content_prefix')} ${_currencyFormat.format(_totalToRefund)}. ${tr(lang, 'returns_confirm_content_suffix')}'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annuler'),
+            child: Text(tr(lang, 'common_cancel')),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Confirmer le retour'),
+            child: Text(tr(lang, 'returns_confirm_action')),
           ),
         ],
       ),
@@ -244,6 +248,7 @@ class _ReturnSheetState extends State<_ReturnSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = context.watch<LocaleProvider>().language;
     return DraggableScrollableSheet(
       initialChildSize: 0.8,
       minChildSize: 0.5,
@@ -269,7 +274,7 @@ class _ReturnSheetState extends State<_ReturnSheet> {
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Text('Sélectionner les articles à retourner',
+                    child: Text(tr(lang, 'returns_select_items'),
                         style: Theme.of(context).textTheme.titleMedium),
                   ),
                   const SizedBox(height: 8),
@@ -301,8 +306,8 @@ class _ReturnSheetState extends State<_ReturnSheet> {
                                               fontSize: 13)),
                                       Text(
                                         max > 0
-                                            ? 'Vendu ${item['quantity']} · Retournable $max'
-                                            : 'Déjà entièrement retourné',
+                                            ? '${tr(lang, 'returns_sold')} ${item['quantity']} · ${tr(lang, 'returns_returnable')} $max'
+                                            : tr(lang, 'returns_already_returned'),
                                         style: TextStyle(
                                             color: max > 0
                                                 ? AppColors.textSecondary
@@ -342,8 +347,8 @@ class _ReturnSheetState extends State<_ReturnSheet> {
                         }),
                         TextField(
                           controller: _reasonController,
-                          decoration: const InputDecoration(
-                              labelText: 'Motif du retour (optionnel)'),
+                          decoration: InputDecoration(
+                              labelText: tr(lang, 'returns_reason')),
                         ),
                         const SizedBox(height: 20),
                       ],
@@ -361,8 +366,8 @@ class _ReturnSheetState extends State<_ReturnSheet> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('Total à rembourser',
-                                style: TextStyle(fontWeight: FontWeight.w600)),
+                            Text(tr(lang, 'returns_total_to_refund'),
+                                style: const TextStyle(fontWeight: FontWeight.w600)),
                             Text(
                               _currencyFormat.format(_totalToRefund),
                               style: const TextStyle(
@@ -387,7 +392,7 @@ class _ReturnSheetState extends State<_ReturnSheet> {
                                     child: CircularProgressIndicator(
                                         color: Colors.white, strokeWidth: 2),
                                   )
-                                : const Text('CONFIRMER LE RETOUR'),
+                                : Text(tr(lang, 'returns_confirm_button')),
                           ),
                         ),
                       ],

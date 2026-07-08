@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../models/activity_log.dart';
 import '../models/employee.dart';
 import '../providers/session_provider.dart';
+import '../providers/locale_provider.dart';
+import '../l10n/translations.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 
@@ -43,15 +45,35 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
     return Icons.history_rounded;
   }
 
+  /// Les actions sont enregistrées en français dans la base (pour rester
+  /// cohérentes dans le temps), mais on les affiche traduites à l'écran.
+  String _translatedAction(String action, String lang) {
+    switch (action) {
+      case 'Suppression produit':
+        return tr(lang, 'activity_action_delete_product');
+      case 'Modification prix':
+        return tr(lang, 'activity_action_price_change');
+      case 'Suppression employé':
+        return tr(lang, 'activity_action_delete_employee');
+      case 'Suppression client':
+        return tr(lang, 'activity_action_delete_customer');
+      case 'Retour vente':
+        return tr(lang, 'activity_action_return');
+      default:
+        return action;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final lang = context.watch<LocaleProvider>().language;
     final isAdmin =
         context.watch<SessionProvider>().currentEmployee?.role ==
             EmployeeRole.admin;
 
     if (!isAdmin) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Journal d\'activité')),
+        appBar: AppBar(title: Text(tr(lang, 'activity_title'))),
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -59,7 +81,7 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
               const Icon(Icons.lock_outline_rounded,
                   size: 40, color: AppColors.textSecondary),
               const SizedBox(height: 8),
-              Text('Accès réservé aux administrateurs',
+              Text(tr(lang, 'activity_restricted'),
                   style: TextStyle(color: AppColors.textSecondary)),
             ],
           ),
@@ -68,12 +90,12 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Journal d\'activité')),
+      appBar: AppBar(title: Text(tr(lang, 'activity_title'))),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _logs.isEmpty
               ? Center(
-                  child: Text('Aucune activité enregistrée',
+                  child: Text(tr(lang, 'activity_empty'),
                       style: TextStyle(color: AppColors.textSecondary)),
                 )
               : RefreshIndicator(
@@ -97,7 +119,7 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
                             child: Icon(_actionIcon(log.action),
                                 color: AppColors.navy, size: 18),
                           ),
-                          title: Text(log.action,
+                          title: Text(_translatedAction(log.action, lang),
                               style:
                                   const TextStyle(fontWeight: FontWeight.w600)),
                           subtitle: Text(
