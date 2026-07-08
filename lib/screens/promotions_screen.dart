@@ -329,13 +329,12 @@ class _PromotionsScreenState extends State<PromotionsScreen> {
                           width: 42,
                           height: 42,
                           decoration: BoxDecoration(
-                            color: (active ? AppColors.success : AppColors.textSecondary)
-                                .withOpacity(0.12),
+                            color: active ? AppColors.success : AppColors.textSecondary,
                             borderRadius: BorderRadius.circular(11),
                           ),
                           alignment: Alignment.center,
-                          child: Icon(Icons.local_offer_rounded,
-                              color: active ? AppColors.success : AppColors.textSecondary,
+                          child: const Icon(Icons.local_offer_rounded,
+                              color: Colors.white,
                               size: 18),
                         ),
                         title: Text(promo.name,

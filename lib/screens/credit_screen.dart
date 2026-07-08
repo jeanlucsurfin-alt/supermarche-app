@@ -67,8 +67,9 @@ class _CreditScreenState extends State<CreditScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppColors.danger.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(14),
+                      color: AppColors.clayLight.withOpacity(0.6),
+                      borderRadius: BorderRadius.circular(AppRadius.card),
+                      border: Border.all(color: AppColors.clay.withOpacity(0.25)),
                     ),
                     child: Row(
                       children: [
@@ -76,12 +77,12 @@ class _CreditScreenState extends State<CreditScreen> {
                           width: 42,
                           height: 42,
                           decoration: BoxDecoration(
-                            color: AppColors.danger.withOpacity(0.15),
+                            color: AppColors.danger,
                             borderRadius: BorderRadius.circular(11),
                           ),
                           alignment: Alignment.center,
                           child: const Icon(Icons.schedule_rounded,
-                              color: AppColors.danger, size: 20),
+                              color: Colors.white, size: 20),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -130,13 +131,13 @@ class _CreditScreenState extends State<CreditScreen> {
                         child: ListTile(
                           onTap: () => _openDetail(debtor),
                           leading: CircleAvatar(
-                            backgroundColor: AppColors.danger.withOpacity(0.1),
+                            backgroundColor: AppColors.danger,
                             child: Text(
                               (debtor['name'] as String).isNotEmpty
                                   ? (debtor['name'] as String)[0].toUpperCase()
                                   : '?',
                               style: const TextStyle(
-                                  color: AppColors.danger,
+                                  color: Colors.white,
                                   fontWeight: FontWeight.w700),
                             ),
                           ),

@@ -197,13 +197,13 @@ class _CustomersScreenState extends State<CustomersScreen> {
                         child: ListTile(
                           onTap: () => _openHistory(customer),
                           leading: CircleAvatar(
-                            backgroundColor: AppColors.navy.withOpacity(0.1),
+                            backgroundColor: AppColors.navy,
                             child: Text(
                               customer.name.isNotEmpty
                                   ? customer.name[0].toUpperCase()
                                   : '?',
                               style: const TextStyle(
-                                  color: AppColors.navy,
+                                  color: Colors.white,
                                   fontWeight: FontWeight.w700),
                             ),
                           ),

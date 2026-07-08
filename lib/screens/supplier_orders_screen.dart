@@ -114,12 +114,12 @@ class _SupplierOrdersScreenState extends State<SupplierOrdersScreen> {
                           width: 40,
                           height: 40,
                           decoration: BoxDecoration(
-                            color: color.withOpacity(0.12),
+                            color: color,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           alignment: Alignment.center,
                           child: Icon(Icons.local_shipping_rounded,
-                              color: color, size: 18),
+                              color: Colors.white, size: 18),
                         ),
                         title: Text('${tr(lang, 'orders_order_number')} #${order.id}',
                             style:

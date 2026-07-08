@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../models/product.dart';
 import '../models/promotion.dart';
@@ -481,8 +482,8 @@ class _CartPanel extends StatelessWidget {
                 Container(
                   width: 24,
                   height: 24,
-                  decoration: BoxDecoration(
-                    color: AppColors.gold.withOpacity(0.15),
+                  decoration: const BoxDecoration(
+                    color: AppColors.gold,
                     shape: BoxShape.circle,
                   ),
                   alignment: Alignment.center,
@@ -697,11 +698,11 @@ class _ProductCard extends StatelessWidget {
                     width: 26,
                     height: 26,
                     decoration: BoxDecoration(
-                      color: catColor.withOpacity(0.12),
+                      color: catColor,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     alignment: Alignment.center,
-                    child: Icon(catIcon, color: catColor, size: 14),
+                    child: Icon(catIcon, color: Colors.white, size: 14),
                   ),
                   if (_hasDiscount) ...[
                     const Spacer(),
@@ -750,10 +751,10 @@ class _ProductCard extends StatelessWidget {
                 child: Text(
                   formatPrice(_discountedPrice, currency),
                   maxLines: 1,
-                  style: TextStyle(
-                    color: _hasDiscount ? AppColors.danger : AppColors.gold,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12,
+                  style: GoogleFonts.spaceGrotesk(
+                    color: _hasDiscount ? AppColors.danger : AppColors.goldDark,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
                   ),
                 ),
               ),

@@ -112,12 +112,12 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
                             width: 40,
                             height: 40,
                             decoration: BoxDecoration(
-                              color: AppColors.navy.withOpacity(0.08),
+                              color: AppColors.navy,
                               borderRadius: BorderRadius.circular(10),
                             ),
                             alignment: Alignment.center,
                             child: Icon(_actionIcon(log.action),
-                                color: AppColors.navy, size: 18),
+                                color: Colors.white, size: 18),
                           ),
                           title: Text(_translatedAction(log.action, lang),
                               style:

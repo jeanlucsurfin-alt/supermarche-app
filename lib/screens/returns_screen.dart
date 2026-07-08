@@ -90,12 +90,12 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
                               width: 40,
                               height: 40,
                               decoration: BoxDecoration(
-                                color: AppColors.navy.withOpacity(0.08),
+                                color: AppColors.navy,
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               alignment: Alignment.center,
                               child: const Icon(Icons.receipt_long_rounded,
-                                  color: AppColors.navy, size: 18),
+                                  color: Colors.white, size: 18),
                             ),
                             title: Text(_dateFormat.format(date),
                                 style: const TextStyle(

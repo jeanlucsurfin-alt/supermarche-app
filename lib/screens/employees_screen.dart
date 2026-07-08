@@ -196,13 +196,13 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                   child: ListTile(
                     onTap: () => _openShiftSheet(employee),
                     leading: CircleAvatar(
-                      backgroundColor: roleColor.withOpacity(0.12),
+                      backgroundColor: roleColor,
                       child: Text(
                         employee.name.isNotEmpty
                             ? employee.name[0].toUpperCase()
                             : '?',
-                        style: TextStyle(
-                            color: roleColor, fontWeight: FontWeight.w700),
+                        style: const TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.w700),
                       ),
                     ),
                     title: Text(employee.name,

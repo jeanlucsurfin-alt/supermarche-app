@@ -292,8 +292,9 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppColors.danger.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(14),
+                      color: AppColors.clayLight.withOpacity(0.6),
+                      borderRadius: BorderRadius.circular(AppRadius.card),
+                      border: Border.all(color: AppColors.clay.withOpacity(0.25)),
                     ),
                     child: Row(
                       children: [
@@ -301,12 +302,12 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                           width: 42,
                           height: 42,
                           decoration: BoxDecoration(
-                            color: AppColors.danger.withOpacity(0.15),
+                            color: AppColors.danger,
                             borderRadius: BorderRadius.circular(11),
                           ),
                           alignment: Alignment.center,
                           child: const Icon(Icons.trending_down_rounded,
-                              color: AppColors.danger, size: 20),
+                              color: Colors.white, size: 20),
                         ),
                         const SizedBox(width: 12),
                         Column(
@@ -345,12 +346,12 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                               width: 40,
                               height: 40,
                               decoration: BoxDecoration(
-                                color: AppColors.navy.withOpacity(0.08),
+                                color: AppColors.navy,
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               alignment: Alignment.center,
                               child: Icon(_categoryIcon(expense.category),
-                                  color: AppColors.navy, size: 18),
+                                  color: Colors.white, size: 18),
                             ),
                             title: Text(expense.category,
                                 style:

@@ -188,15 +188,13 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             height: 40,
                             decoration: BoxDecoration(
                               color: categoryProvider
-                                  .colorFor(product.category)
-                                  .withOpacity(0.12),
+                                  .colorFor(product.category),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             alignment: Alignment.center,
                             child: Icon(
                                 categoryProvider.iconFor(product.category),
-                                color: categoryProvider
-                                    .colorFor(product.category),
+                                color: Colors.white,
                                 size: 18),
                           ),
                           title: Text(product.name,
