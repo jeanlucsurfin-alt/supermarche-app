@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../models/employee_shift.dart';
 import '../services/database_service.dart';
@@ -89,6 +90,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
+                  _GreetingHeader(),
+                  const SizedBox(height: 20),
                   Text('Aujourd\'hui',
                       style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 12),
@@ -246,6 +249,68 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
+class _GreetingHeader extends StatelessWidget {
+  String get _greeting {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Bonjour';
+    if (hour < 18) return 'Bon après-midi';
+    return 'Bonsoir';
+  }
+
+  // Formatage manuel (sans dépendre des données de locale intl, non
+  // initialisées dans l'app, pour éviter tout risque de plantage).
+  static const _weekdays = [
+    'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'
+  ];
+  static const _months = [
+    'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet',
+    'août', 'septembre', 'octobre', 'novembre', 'décembre'
+  ];
+
+  String get _dateLabel {
+    final now = DateTime.now();
+    return '${_weekdays[now.weekday - 1]} ${now.day} ${_months[now.month - 1]}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(_greeting,
+                  style: GoogleFonts.spaceGrotesk(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.4,
+                      color: AppColors.textPrimary)),
+              Text(
+                _dateLabel,
+                style: const TextStyle(
+                    color: AppColors.textSecondary, fontSize: 12.5),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: AppColors.navy,
+            borderRadius: BorderRadius.circular(13),
+          ),
+          alignment: Alignment.center,
+          child: const Icon(Icons.storefront_rounded,
+              color: AppColors.gold, size: 22),
+        ),
+      ],
+    );
+  }
+}
+
 class _DashboardCard extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -268,40 +333,45 @@ class _DashboardCard extends StatelessWidget {
     return Card(
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadius.card),
         child: Padding(
           padding: const EdgeInsets.all(14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 32,
-                height: 32,
+                width: 30,
+                height: 30,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(9),
+                  color: color,
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 alignment: Alignment.center,
-                child: Icon(icon, color: color, size: 16),
+                child: Icon(icon, color: Colors.white, size: 15),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerLeft,
                 child: Text(
                   value,
                   maxLines: 1,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 17,
+                  style: GoogleFonts.spaceGrotesk(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 18,
+                      letterSpacing: -0.3,
                       color: AppColors.textPrimary),
                 ),
               ),
+              const SizedBox(height: 2),
               Text(label,
                   style: const TextStyle(
-                      color: AppColors.textSecondary, fontSize: 11)),
+                      color: AppColors.textSecondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500)),
               Text(subLabel,
-                  style: TextStyle(color: color, fontSize: 10)),
+                  style: TextStyle(
+                      color: color, fontSize: 10, fontWeight: FontWeight.w600)),
             ],
           ),
         ),
@@ -322,22 +392,24 @@ class _QuickAccessChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(AppRadius.chip),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 11),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFE3E6EC)),
+          color: AppColors.clayLight.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(AppRadius.chip),
+          border: Border.all(color: AppColors.clay.withOpacity(0.35)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 16, color: AppColors.navy),
-            const SizedBox(width: 6),
+            Icon(icon, size: 16, color: AppColors.clay),
+            const SizedBox(width: 7),
             Text(label,
                 style: const TextStyle(
-                    fontWeight: FontWeight.w600, fontSize: 12)),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12.5,
+                    color: AppColors.navy)),
           ],
         ),
       ),
