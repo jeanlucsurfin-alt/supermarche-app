@@ -7,6 +7,7 @@ import '../theme/app_theme.dart';
 import '../widgets/fafoutt_logo.dart';
 import '../widgets/main_menu_sheet.dart';
 import 'employees_screen.dart';
+import 'settings_screen.dart';
 import 'credit_screen.dart';
 import 'expenses_screen.dart';
 
@@ -295,16 +296,23 @@ class _GreetingHeader extends StatelessWidget {
             ],
           ),
         ),
-        Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: AppColors.navy,
-            borderRadius: BorderRadius.circular(13),
+        InkWell(
+          borderRadius: BorderRadius.circular(13),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const SettingsScreen()),
           ),
-          alignment: Alignment.center,
-          child: const Icon(Icons.storefront_rounded,
-              color: AppColors.gold, size: 22),
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: AppColors.navy,
+              borderRadius: BorderRadius.circular(13),
+            ),
+            alignment: Alignment.center,
+            child: const Icon(Icons.storefront_rounded,
+                color: AppColors.gold, size: 22),
+          ),
         ),
       ],
     );
