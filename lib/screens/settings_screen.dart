@@ -95,9 +95,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await _db.setSetting('loyaltyEnabled', _loyaltyEnabled.toString());
     setState(() => _saving = false);
     if (mounted) {
+      final lang = context.read<LocaleProvider>().language;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Paramètres enregistrés'),
+        SnackBar(
+          content: Text(tr(lang, 'settings_saved')),
           backgroundColor: AppColors.success,
         ),
       );
@@ -110,11 +111,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _backup() async {
+    final lang = context.read<LocaleProvider>().language;
     try {
       final dbPath = await _db.getDatabasePath();
       final dbFile = File(dbPath);
       if (!await dbFile.exists()) {
-        throw Exception('Base de données introuvable');
+        throw Exception(tr(lang, 'settings_db_not_found'));
       }
       final tempDir = await getTemporaryDirectory();
       final backupName =
@@ -130,8 +132,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) {
         setState(() => _lastBackupDate = DateTime.now());
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Sauvegarde créée avec succès'),
+          SnackBar(
+            content: Text(tr(lang, 'settings_backup_created')),
             backgroundColor: AppColors.success,
           ),
         );
@@ -140,7 +142,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur lors de la sauvegarde : $e'),
+            content: Text('${tr(lang, 'settings_backup_error')} $e'),
             backgroundColor: AppColors.danger,
           ),
         );
@@ -149,21 +151,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _restore() async {
+    final lang = context.read<LocaleProvider>().language;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Restaurer une sauvegarde ?'),
-        content: const Text(
-            'Toutes les données actuelles (produits, ventes, clients...) seront remplacées par celles du fichier de sauvegarde. Cette action est irréversible.'),
+        title: Text(tr(lang, 'settings_restore_title')),
+        content: Text(tr(lang, 'settings_restore_content')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annuler'),
+            child: Text(tr(lang, 'common_cancel')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Restaurer',
-                style: TextStyle(color: AppColors.danger)),
+            child: Text(tr(lang, 'settings_restore_confirm'),
+                style: const TextStyle(color: AppColors.danger)),
           ),
         ],
       ),
@@ -184,11 +186,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-                'Sauvegarde restaurée. Redémarrez l\'application pour appliquer les changements.'),
+          SnackBar(
+            content: Text(tr(lang, 'settings_restore_success')),
             backgroundColor: AppColors.success,
-            duration: Duration(seconds: 5),
+            duration: const Duration(seconds: 5),
           ),
         );
       }
@@ -196,7 +197,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur lors de la restauration : $e'),
+            content: Text('${tr(lang, 'settings_restore_error')} $e'),
             backgroundColor: AppColors.danger,
           ),
         );
@@ -215,9 +216,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = context.watch<LocaleProvider>().language;
     return Scaffold(
       appBar: AppBar(
-          title: Text(tr(context.watch<LocaleProvider>().language, 'settings_title'))),
+          title: Text(tr(lang, 'settings_title'))),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
@@ -239,8 +241,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         Expanded(
                           child: Text(
                             _lastBackupDate == null
-                                ? 'Aucune sauvegarde n\'a encore été effectuée.'
-                                : 'Dernière sauvegarde il y a plus de 7 jours.',
+                                ? tr(lang, 'settings_no_backup_yet')
+                                : tr(lang, 'settings_backup_over_7days'),
                             style: const TextStyle(
                                 color: AppColors.danger,
                                 fontWeight: FontWeight.w600,
@@ -254,7 +256,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   builder: (context, locale, _) => Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Langue / Lang',
+                      Text(tr(lang, 'settings_language_label'),
                           style: Theme.of(context).textTheme.titleMedium),
                       const SizedBox(height: 12),
                       SegmentedButton<String>(
@@ -269,41 +271,41 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ],
                   ),
                 ),
-                Text('Informations du magasin',
+                Text(tr(lang, 'settings_store_info'),
                     style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _storeNameController,
-                  decoration: const InputDecoration(labelText: 'Nom du magasin'),
+                  decoration: InputDecoration(labelText: tr(lang, 'settings_store_name')),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _storeAddressController,
-                  decoration: const InputDecoration(labelText: 'Adresse (optionnel)'),
+                  decoration: InputDecoration(labelText: tr(lang, 'settings_store_address')),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _storePhoneController,
-                  decoration: const InputDecoration(labelText: 'Téléphone (optionnel)'),
+                  decoration: InputDecoration(labelText: tr(lang, 'settings_store_phone')),
                   keyboardType: TextInputType.phone,
                 ),
                 const SizedBox(height: 24),
-                Text('Devise', style: Theme.of(context).textTheme.titleMedium),
+                Text(tr(lang, 'settings_currency'), style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _exchangeRateController,
-                  decoration: const InputDecoration(
-                    labelText: 'Taux de change par défaut (HTG pour 1 USD)',
+                  decoration: InputDecoration(
+                    labelText: tr(lang, 'settings_exchange_rate'),
                   ),
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 ),
                 const SizedBox(height: 24),
-                Text('Fidélité', style: Theme.of(context).textTheme.titleMedium),
+                Text(tr(lang, 'settings_loyalty'), style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 4),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Programme de fidélité activé'),
-                  subtitle: const Text('1 point gagné par 100 HTG dépensés'),
+                  title: Text(tr(lang, 'settings_loyalty_enabled')),
+                  subtitle: Text(tr(lang, 'settings_loyalty_subtitle')),
                   value: _loyaltyEnabled,
                   activeColor: AppColors.navy,
                   onChanged: (v) => setState(() => _loyaltyEnabled = v),
@@ -321,17 +323,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             child: CircularProgressIndicator(
                                 color: Colors.white, strokeWidth: 2),
                           )
-                        : const Text('ENREGISTRER LES PARAMÈTRES'),
+                        : Text(tr(lang, 'settings_save')),
                   ),
                 ),
                 const SizedBox(height: 32),
-                Text('Sauvegarde des données',
+                Text(tr(lang, 'settings_backup_data'),
                     style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 4),
                 Text(
                   _lastBackupDate != null
-                      ? 'Dernière sauvegarde : ${DateFormat('dd/MM/yyyy à HH:mm').format(_lastBackupDate!)}'
-                      : 'Aucune sauvegarde effectuée',
+                      ? '${tr(lang, 'settings_last_backup')} ${DateFormat('dd/MM/yyyy à HH:mm').format(_lastBackupDate!)}'
+                      : tr(lang, 'settings_no_backup'),
                   style: const TextStyle(
                       color: AppColors.textSecondary, fontSize: 12),
                 ),
@@ -342,7 +344,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: OutlinedButton.icon(
                     onPressed: _backup,
                     icon: const Icon(Icons.upload_file_rounded, size: 18),
-                    label: const Text('SAUVEGARDER MES DONNÉES'),
+                    label: Text(tr(lang, 'settings_backup_button')),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -355,20 +357,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         foregroundColor: AppColors.danger,
                         side: const BorderSide(color: AppColors.danger)),
                     icon: const Icon(Icons.download_rounded, size: 18),
-                    label: const Text('RESTAURER UNE SAUVEGARDE'),
+                    label: Text(tr(lang, 'settings_restore_button')),
                   ),
                 ),
                 const SizedBox(height: 32),
-                Text('Sauvegarde automatique',
+                Text(tr(lang, 'settings_auto_backup'),
                     style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 4),
                 Text(
-                  'Se déclenche automatiquement à l\'ouverture de l\'app si une sauvegarde est due (garde les 5 dernières).',
+                  tr(lang, 'settings_auto_backup_desc'),
                   style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
                 ),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Activer la sauvegarde automatique'),
+                  title: Text(tr(lang, 'settings_auto_backup_enable')),
                   value: _autoBackupEnabled,
                   activeColor: AppColors.navy,
                   onChanged: _toggleAutoBackup,
@@ -376,9 +378,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 if (_autoBackupEnabled) ...[
                   const SizedBox(height: 4),
                   SegmentedButton<String>(
-                    segments: const [
-                      ButtonSegment(value: 'daily', label: Text('Quotidienne')),
-                      ButtonSegment(value: 'weekly', label: Text('Hebdomadaire')),
+                    segments: [
+                      ButtonSegment(value: 'daily', label: Text(tr(lang, 'settings_daily'))),
+                      ButtonSegment(value: 'weekly', label: Text(tr(lang, 'settings_weekly'))),
                     ],
                     selected: {_autoBackupFrequency},
                     onSelectionChanged: (s) => _setAutoBackupFrequency(s.first),
@@ -386,17 +388,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: 8),
                   Text(
                     _lastAutoBackupDate != null
-                        ? 'Dernière sauvegarde automatique : ${DateFormat('dd/MM/yyyy à HH:mm').format(_lastAutoBackupDate!)}'
-                        : 'Aucune sauvegarde automatique effectuée pour le moment',
+                        ? '${tr(lang, 'settings_last_auto_backup')} ${DateFormat('dd/MM/yyyy à HH:mm').format(_lastAutoBackupDate!)}'
+                        : tr(lang, 'settings_no_auto_backup'),
                     style: const TextStyle(
                         color: AppColors.textSecondary, fontSize: 12),
                   ),
                 ],
                 const SizedBox(height: 32),
-                Text('Impression', style: Theme.of(context).textTheme.titleMedium),
+                Text(tr(lang, 'settings_printing'), style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 4),
                 Text(
-                  'Configurez une imprimante thermique Bluetooth pour imprimer directement les reçus.',
+                  tr(lang, 'settings_printing_desc'),
                   style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
                 ),
                 const SizedBox(height: 12),
@@ -412,7 +414,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       );
                     },
                     icon: const Icon(Icons.print_outlined, size: 18),
-                    label: const Text('CONFIGURER L\'IMPRIMANTE BLUETOOTH'),
+                    label: Text(tr(lang, 'settings_configure_printer')),
                   ),
                 ),
                 const SizedBox(height: 20),

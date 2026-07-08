@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/category_provider.dart';
+import '../providers/locale_provider.dart';
+import '../l10n/translations.dart';
 import '../theme/app_theme.dart';
 import '../utils/category_style.dart';
 
@@ -13,6 +15,7 @@ class CategoriesScreen extends StatefulWidget {
 
 class _CategoriesScreenState extends State<CategoriesScreen> {
   Future<void> _openAddDialog() async {
+    final lang = context.read<LocaleProvider>().language;
     final nameController = TextEditingController();
     String selectedIcon = categoryIconChoices.keys.first;
     int selectedColor = categoryColorChoices.first;
@@ -21,7 +24,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Nouvelle catégorie'),
+          title: Text(tr(lang, 'categories_new')),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -29,12 +32,12 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
               children: [
                 TextField(
                   controller: nameController,
-                  decoration: const InputDecoration(labelText: 'Nom'),
+                  decoration: InputDecoration(labelText: tr(lang, 'categories_name')),
                   autofocus: true,
                 ),
                 const SizedBox(height: 16),
-                const Text('Icône',
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
+                Text(tr(lang, 'categories_icon'),
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
@@ -67,8 +70,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                   }).toList(),
                 ),
                 const SizedBox(height: 16),
-                const Text('Couleur',
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
+                Text(tr(lang, 'categories_color'),
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
@@ -103,7 +106,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Annuler'),
+              child: Text(tr(lang, 'common_cancel')),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -118,15 +121,15 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                 } catch (_) {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Cette catégorie existe déjà'),
+                      SnackBar(
+                        content: Text(tr(lang, 'categories_already_exists')),
                         backgroundColor: AppColors.danger,
                       ),
                     );
                   }
                 }
               },
-              child: const Text('Ajouter'),
+              child: Text(tr(lang, 'common_add')),
             ),
           ],
         ),
@@ -135,21 +138,21 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   }
 
   Future<void> _confirmDelete(int id, String name) async {
+    final lang = context.read<LocaleProvider>().language;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Supprimer cette catégorie ?'),
-        content: Text(
-            '"$name" sera retirée de la liste. Les produits existants garderont leur catégorie actuelle mais elle n\'apparaîtra plus dans les filtres.'),
+        title: Text(tr(lang, 'categories_delete_title')),
+        content: Text('"$name" ${tr(lang, 'categories_delete_content')}'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annuler'),
+            child: Text(tr(lang, 'common_cancel')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child:
-                const Text('Supprimer', style: TextStyle(color: AppColors.danger)),
+                Text(tr(lang, 'common_delete'), style: const TextStyle(color: AppColors.danger)),
           ),
         ],
       ),
@@ -161,15 +164,16 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = context.watch<LocaleProvider>().language;
     final categories = context.watch<CategoryProvider>().categories;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Catégories'),
+        title: Text(tr(lang, 'categories_title')),
       ),
       body: categories.isEmpty
           ? Center(
-              child: Text('Aucune catégorie',
+              child: Text(tr(lang, 'categories_empty'),
                   style: TextStyle(color: AppColors.textSecondary)),
             )
           : ListView.builder(
@@ -208,7 +212,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         onPressed: _openAddDialog,
         backgroundColor: AppColors.navy,
         icon: const Icon(Icons.add_rounded),
-        label: const Text('Ajouter'),
+        label: Text(tr(lang, 'common_add')),
       ),
     );
   }

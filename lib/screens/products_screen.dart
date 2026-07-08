@@ -7,6 +7,8 @@ import 'package:printing/printing.dart';
 import '../models/product.dart';
 import '../providers/category_provider.dart';
 import '../providers/session_provider.dart';
+import '../providers/locale_provider.dart';
+import '../l10n/translations.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 
@@ -108,21 +110,22 @@ class _ProductsScreenState extends State<ProductsScreen> {
   }
 
   Future<void> _confirmDelete(Product product) async {
+    final lang = context.read<LocaleProvider>().language;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Supprimer ce produit ?'),
+        title: Text(tr(lang, 'products_delete_title')),
         content: Text(
-            '${product.name} sera définitivement supprimé. Cette action est irréversible.'),
+            '${product.name} ${tr(lang, 'products_delete_content_suffix')}'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annuler'),
+            child: Text(tr(lang, 'common_cancel')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child:
-                const Text('Supprimer', style: TextStyle(color: AppColors.danger)),
+                Text(tr(lang, 'common_delete'), style: const TextStyle(color: AppColors.danger)),
           ),
         ],
       ),
@@ -144,9 +147,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = context.watch<LocaleProvider>().language;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Produits'),
+        title: Text(tr(lang, 'products_title')),
       ),
       body: Column(
         children: [
@@ -155,7 +159,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Rechercher un produit ou un code...',
+                hintText: tr(lang, 'products_search_hint'),
                 prefixIcon: const Icon(Icons.search_rounded,
                     color: AppColors.textSecondary),
               ),
@@ -165,7 +169,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
           Expanded(
             child: _filtered.isEmpty
                 ? Center(
-                    child: Text('Aucun produit',
+                    child: Text(tr(lang, 'products_empty'),
                         style: TextStyle(color: AppColors.textSecondary)),
                   )
                 : ListView.builder(
@@ -209,7 +213,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                               IconButton(
                                 icon: const Icon(Icons.qr_code_2_rounded,
                                     color: AppColors.textSecondary, size: 20),
-                                tooltip: 'Générer une étiquette',
+                                tooltip: tr(lang, 'products_generate_label'),
                                 onPressed: () => _printLabel(product),
                               ),
                               IconButton(
@@ -231,7 +235,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
         onPressed: () => _openEditSheet(),
         backgroundColor: AppColors.navy,
         icon: const Icon(Icons.add_rounded),
-        label: const Text('Ajouter'),
+        label: Text(tr(lang, 'common_add')),
       ),
     );
   }
@@ -323,10 +327,11 @@ class _ProductEditSheetState extends State<_ProductEditSheet> {
   }
 
   Future<void> _save() async {
+    final lang = context.read<LocaleProvider>().language;
     if (_nameController.text.trim().isEmpty || _selectedCategory == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Le nom et la catégorie sont obligatoires'),
+        SnackBar(
+          content: Text(tr(lang, 'products_name_category_required')),
           backgroundColor: AppColors.danger,
         ),
       );
@@ -383,9 +388,10 @@ class _ProductEditSheetState extends State<_ProductEditSheet> {
     } catch (_) {
       setState(() => _saving = false);
       if (mounted) {
+        final lang = context.read<LocaleProvider>().language;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Ce code-barres est déjà utilisé'),
+          SnackBar(
+            content: Text(tr(lang, 'products_barcode_used')),
             backgroundColor: AppColors.danger,
           ),
         );
@@ -395,6 +401,7 @@ class _ProductEditSheetState extends State<_ProductEditSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = context.watch<LocaleProvider>().language;
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
@@ -419,17 +426,17 @@ class _ProductEditSheetState extends State<_ProductEditSheet> {
                   ),
                 ),
               ),
-              Text(_isEditing ? 'Modifier le produit' : 'Nouveau produit',
+              Text(_isEditing ? tr(lang, 'products_edit') : tr(lang, 'products_new'),
                   style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 16),
               TextField(
                 controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Nom du produit'),
+                decoration: InputDecoration(labelText: tr(lang, 'products_name')),
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 value: _selectedCategory,
-                decoration: const InputDecoration(labelText: 'Catégorie'),
+                decoration: InputDecoration(labelText: tr(lang, 'products_category')),
                 items: widget.categoryNames
                     .map((c) => DropdownMenuItem(value: c, child: Text(c)))
                     .toList(),
@@ -438,8 +445,8 @@ class _ProductEditSheetState extends State<_ProductEditSheet> {
               const SizedBox(height: 12),
               TextField(
                 controller: _barcodeController,
-                decoration: const InputDecoration(
-                    labelText: 'Code-barres (optionnel)'),
+                decoration: InputDecoration(
+                    labelText: tr(lang, 'products_barcode')),
                 keyboardType: TextInputType.number,
               ),
               const SizedBox(height: 12),
@@ -448,8 +455,8 @@ class _ProductEditSheetState extends State<_ProductEditSheet> {
                   Expanded(
                     child: TextField(
                       controller: _purchasePriceController,
-                      decoration: const InputDecoration(
-                          labelText: 'Prix d\'achat (HTG)'),
+                      decoration: InputDecoration(
+                          labelText: tr(lang, 'products_purchase_price')),
                       keyboardType: TextInputType.number,
                     ),
                   ),
@@ -457,8 +464,8 @@ class _ProductEditSheetState extends State<_ProductEditSheet> {
                   Expanded(
                     child: TextField(
                       controller: _sellPriceController,
-                      decoration: const InputDecoration(
-                          labelText: 'Prix de vente (HTG)'),
+                      decoration: InputDecoration(
+                          labelText: tr(lang, 'products_sell_price')),
                       keyboardType: TextInputType.number,
                     ),
                   ),
@@ -470,8 +477,8 @@ class _ProductEditSheetState extends State<_ProductEditSheet> {
                   Expanded(
                     child: TextField(
                       controller: _purchasePriceUSDController,
-                      decoration: const InputDecoration(
-                          labelText: 'Prix d\'achat (USD, optionnel)'),
+                      decoration: InputDecoration(
+                          labelText: tr(lang, 'products_purchase_price_usd')),
                       keyboardType:
                           const TextInputType.numberWithOptions(decimal: true),
                     ),
@@ -480,8 +487,8 @@ class _ProductEditSheetState extends State<_ProductEditSheet> {
                   Expanded(
                     child: TextField(
                       controller: _sellPriceUSDController,
-                      decoration: const InputDecoration(
-                          labelText: 'Prix de vente (USD, optionnel)'),
+                      decoration: InputDecoration(
+                          labelText: tr(lang, 'products_sell_price_usd')),
                       keyboardType:
                           const TextInputType.numberWithOptions(decimal: true),
                     ),
@@ -493,8 +500,8 @@ class _ProductEditSheetState extends State<_ProductEditSheet> {
                 child: TextButton.icon(
                   onPressed: _fillUsdFromExchangeRate,
                   icon: const Icon(Icons.currency_exchange_rounded, size: 15),
-                  label: const Text('Calculer via le taux de change',
-                      style: TextStyle(fontSize: 12)),
+                  label: Text(tr(lang, 'products_calc_via_rate'),
+                      style: const TextStyle(fontSize: 12)),
                 ),
               ),
               const SizedBox(height: 12),
@@ -504,7 +511,7 @@ class _ProductEditSheetState extends State<_ProductEditSheet> {
                     child: TextField(
                       controller: _stockController,
                       decoration:
-                          const InputDecoration(labelText: 'Stock actuel'),
+                          InputDecoration(labelText: tr(lang, 'products_current_stock')),
                       keyboardType: TextInputType.number,
                     ),
                   ),
@@ -513,7 +520,7 @@ class _ProductEditSheetState extends State<_ProductEditSheet> {
                     child: TextField(
                       controller: _thresholdController,
                       decoration:
-                          const InputDecoration(labelText: 'Seuil stock bas'),
+                          InputDecoration(labelText: tr(lang, 'products_low_stock_threshold')),
                       keyboardType: TextInputType.number,
                     ),
                   ),
@@ -524,14 +531,14 @@ class _ProductEditSheetState extends State<_ProductEditSheet> {
                 onTap: _pickExpiryDate,
                 child: InputDecorator(
                   decoration:
-                      const InputDecoration(labelText: 'Date de péremption (optionnel)'),
+                      InputDecoration(labelText: tr(lang, 'products_expiry_date')),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
                         _expiryDate != null
                             ? DateFormat('dd/MM/yyyy').format(_expiryDate!)
-                            : 'Aucune',
+                            : tr(lang, 'products_none'),
                         style: TextStyle(
                           color: _expiryDate != null
                               ? AppColors.textPrimary
@@ -562,7 +569,9 @@ class _ProductEditSheetState extends State<_ProductEditSheet> {
                           child: CircularProgressIndicator(
                               color: Colors.white, strokeWidth: 2),
                         )
-                      : Text(_isEditing ? 'ENREGISTRER' : 'AJOUTER LE PRODUIT'),
+                      : Text(_isEditing
+                          ? tr(lang, 'products_save_button')
+                          : tr(lang, 'products_add_button')),
                 ),
               ),
             ],
