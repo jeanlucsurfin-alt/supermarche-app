@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../models/customer.dart';
+import '../models/sale.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/receipt_pdf.dart';
 
 class SalesHistoryScreen extends StatefulWidget {
   const SalesHistoryScreen({super.key});
@@ -249,6 +251,7 @@ class _SaleDetailSheetState extends State<_SaleDetailSheet> {
   List<Map<String, dynamic>> _items = [];
   Customer? _customer;
   bool _loading = true;
+  bool _printing = false;
 
   final _currencyFormat =
       NumberFormat.currency(locale: 'fr', symbol: 'HTG ', decimalDigits: 0);
@@ -275,6 +278,36 @@ class _SaleDetailSheetState extends State<_SaleDetailSheet> {
       _customer = customer;
       _loading = false;
     });
+  }
+
+  Future<void> _printReceipt() async {
+    setState(() => _printing = true);
+    try {
+      final sale = Sale(
+        id: widget.sale['id'] as int,
+        date: DateTime.parse(widget.sale['date']),
+        items: _items
+            .map((m) => SaleItem(
+                  productId: m['productId'] as int,
+                  productName: m['productName'] as String,
+                  unitPrice: (m['unitPrice'] as num).toDouble(),
+                  quantity: m['quantity'] as int,
+                ))
+            .toList(),
+        paymentMethod: PaymentMethod.values
+            .firstWhere((e) => e.name == widget.sale['paymentMethod']),
+        amountPaid: (widget.sale['amountPaid'] as num).toDouble(),
+        cashierName: widget.sale['cashierName'] as String?,
+        customerId: widget.sale['customerId'] as int?,
+        currency: _currency,
+        discountAmount:
+            (widget.sale['discountAmount'] as num?)?.toDouble() ?? 0,
+        promoCode: widget.sale['promoCode'] as String?,
+      );
+      await shareReceiptPdf(sale, db: widget.db);
+    } finally {
+      if (mounted) setState(() => _printing = false);
+    }
   }
 
   String _paymentLabel(String method) {
@@ -331,9 +364,27 @@ class _SaleDetailSheetState extends State<_SaleDetailSheet> {
                       children: [
                         Text('Vente #$_saleId',
                             style: Theme.of(context).textTheme.titleLarge),
-                        Text(_dateFormat.format(date),
-                            style: const TextStyle(
-                                color: AppColors.textSecondary, fontSize: 12)),
+                        Row(
+                          children: [
+                            Text(_dateFormat.format(date),
+                                style: const TextStyle(
+                                    color: AppColors.textSecondary, fontSize: 12)),
+                            const SizedBox(width: 4),
+                            IconButton(
+                              icon: _printing
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2),
+                                    )
+                                  : const Icon(Icons.print_outlined,
+                                      color: AppColors.navy, size: 20),
+                              tooltip: 'Réimprimer le reçu',
+                              onPressed: _printing ? null : _printReceipt,
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -413,8 +464,27 @@ class _SaleDetailSheetState extends State<_SaleDetailSheet> {
                         if (amountPaid > total)
                           _totalRow('Monnaie rendue',
                               _currencyFormat.format(amountPaid - total)),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 16),
                       ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: OutlinedButton.icon(
+                        onPressed: _printing ? null : _printReceipt,
+                        icon: _printing
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.print_outlined, size: 18),
+                        label: Text(
+                            _printing ? 'Génération...' : 'IMPRIMER LE REÇU'),
+                      ),
                     ),
                   ),
                 ],
