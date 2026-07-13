@@ -1126,6 +1126,26 @@ class DatabaseService {
     return await db.query('sales', orderBy: 'date DESC', limit: limit);
   }
 
+  /// Ventes sur une période donnée, du plus récent au plus ancien —
+  /// utilisé par l'écran Historique des ventes.
+  Future<List<Map<String, dynamic>>> getSalesInRange(
+      DateTime start, DateTime end) async {
+    final db = await database;
+    return await db.query(
+      'sales',
+      where: 'date BETWEEN ? AND ?',
+      whereArgs: [start.toIso8601String(), end.toIso8601String()],
+      orderBy: 'date DESC',
+    );
+  }
+
+  Future<Customer?> getCustomerById(int id) async {
+    final db = await database;
+    final result = await db.query('customers', where: 'id = ?', whereArgs: [id]);
+    if (result.isEmpty) return null;
+    return Customer.fromMap(result.first);
+  }
+
   Future<Map<String, dynamic>?> getSaleById(int saleId) async {
     final db = await database;
     final result =

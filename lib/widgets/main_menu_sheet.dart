@@ -10,6 +10,7 @@ import '../screens/cash_closing_screen.dart';
 import '../screens/returns_screen.dart';
 import '../screens/expenses_screen.dart';
 import '../screens/activity_log_screen.dart';
+import '../screens/sales_history_screen.dart';
 import '../screens/promotions_screen.dart';
 
 /// Ouvre le menu principal (gestion + déconnexion) juste en-dessous du
@@ -41,6 +42,7 @@ Future<void> showMainMenu(GlobalKey anchorKey) async {
       _item(Icons.badge_outlined, 'Employés', 'employes'),
       _item(Icons.people_outline_rounded, 'Clients', 'clients'),
       _item(Icons.schedule_rounded, 'Créances', 'creances'),
+      _item(Icons.receipt_long_rounded, 'Historique des ventes', 'historique'),
       _item(Icons.settings_outlined, 'Paramètres', 'parametres'),
       _item(Icons.point_of_sale_rounded, 'Clôture de caisse', 'cloture'),
       _item(Icons.undo_rounded, 'Retours', 'retours'),
@@ -69,6 +71,9 @@ Future<void> showMainMenu(GlobalKey anchorKey) async {
       break;
     case 'creances':
       screen = const CreditScreen();
+      break;
+    case 'historique':
+      screen = const SalesHistoryScreen();
       break;
     case 'parametres':
       screen = const SettingsScreen();
