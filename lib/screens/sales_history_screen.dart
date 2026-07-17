@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../models/customer.dart';
 import '../models/sale.dart';
+import '../services/bluetooth_printer_service.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/receipt_pdf.dart';
@@ -304,7 +305,28 @@ class _SaleDetailSheetState extends State<_SaleDetailSheet> {
             (widget.sale['discountAmount'] as num?)?.toDouble() ?? 0,
         promoCode: widget.sale['promoCode'] as String?,
       );
-      await shareReceiptPdf(sale, db: widget.db);
+
+      final printerService = BluetoothPrinterService();
+      final hasSaved = await printerService.hasSavedPrinter();
+
+      if (hasSaved) {
+        // Imprimante thermique enregistrée : on imprime directement dessus,
+        // sans passer par la fenêtre de sélection d'impression d'Android
+        // (qui ne connaît pas les imprimantes Bluetooth brutes).
+        final ok = await printerService.printReceipt(sale);
+        if (!ok && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                  "Échec de l'impression. Vérifiez que l'imprimante est allumée et à proximité."),
+            ),
+          );
+        }
+      } else {
+        // Aucune imprimante Bluetooth enregistrée dans Paramètres :
+        // on propose le partage/impression PDF comme solution de repli.
+        await shareReceiptPdf(sale, db: widget.db);
+      }
     } finally {
       if (mounted) setState(() => _printing = false);
     }
