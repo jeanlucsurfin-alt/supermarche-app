@@ -1,5 +1,6 @@
 import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../services/bluetooth_printer_service.dart';
 import '../theme/app_theme.dart';
 
@@ -17,6 +18,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
   bool _loading = true;
   bool _connecting = false;
   String? _error;
+  bool _permissionPermanentlyDenied = false;
 
   @override
   void initState() {
@@ -28,8 +30,22 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
     setState(() {
       _loading = true;
       _error = null;
+      _permissionPermanentlyDenied = false;
     });
     try {
+      final granted = await _printerService.requestPermissions();
+      if (!granted) {
+        final permanentlyDenied = await _printerService.isPermanentlyDenied();
+        setState(() {
+          _loading = false;
+          _permissionPermanentlyDenied = permanentlyDenied;
+          _error = permanentlyDenied
+              ? 'La permission Bluetooth a été refusée définitivement. Autorisez-la manuellement dans les paramètres du téléphone.'
+              : 'La permission Bluetooth est nécessaire pour voir les imprimantes associées.';
+        });
+        return;
+      }
+
       final devices = await _printerService.getPairedDevices();
       final savedName = await _printerService.getSavedPrinterName();
       setState(() {
@@ -41,7 +57,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
       setState(() {
         _loading = false;
         _error =
-            'Impossible d\'accéder au Bluetooth. Vérifiez qu\'il est activé et que la permission est accordée.';
+            'Impossible d\'accéder au Bluetooth. Vérifiez qu\'il est activé sur le téléphone.';
       });
     }
   }
@@ -127,6 +143,19 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                     Text(_error!,
                         textAlign: TextAlign.center,
                         style: const TextStyle(color: AppColors.danger)),
+                    const SizedBox(height: 16),
+                    if (_permissionPermanentlyDenied)
+                      OutlinedButton.icon(
+                        onPressed: openAppSettings,
+                        icon: const Icon(Icons.settings_outlined, size: 18),
+                        label: const Text('OUVRIR LES PARAMÈTRES DU TÉLÉPHONE'),
+                      )
+                    else
+                      OutlinedButton.icon(
+                        onPressed: _load,
+                        icon: const Icon(Icons.refresh_rounded, size: 18),
+                        label: const Text('RÉESSAYER'),
+                      ),
                   ],
                 ),
               )

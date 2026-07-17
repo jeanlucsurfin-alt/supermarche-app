@@ -1,3 +1,4 @@
+import 'package:permission_handler/permission_handler.dart';
 import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 import '../models/sale.dart';
 import '../services/database_service.dart';
@@ -10,6 +11,40 @@ class BluetoothPrinterService {
   BluetoothPrinterService._internal();
 
   final DatabaseService _db = DatabaseService();
+
+  /// Demande les permissions Bluetooth nécessaires (obligatoire sur
+  /// Android 12+ : les déclarer dans le manifeste ne suffit pas, il faut
+  /// explicitement demander l'autorisation à l'utilisateur au moment venu).
+  /// Retourne true si les permissions sont accordées.
+  Future<bool> requestPermissions() async {
+    final statuses = await [
+      Permission.bluetoothConnect,
+      Permission.bluetoothScan,
+      Permission.bluetooth,
+    ].request();
+
+    // Sur Android <12, bluetoothConnect/bluetoothScan n'existent pas et
+    // remontent "permanentlyDenied" ou "restricted" sans bloquer : on se
+    // base donc sur le fait qu'aucune des permissions pertinentes ne soit
+    // explicitement refusée par l'utilisateur.
+    final connect = statuses[Permission.bluetoothConnect];
+    final scan = statuses[Permission.bluetoothScan];
+    final legacy = statuses[Permission.bluetooth];
+
+    final connectOk = connect == null || connect.isGranted || connect.isLimited;
+    final scanOk = scan == null || scan.isGranted || scan.isLimited;
+    final legacyOk = legacy == null || legacy.isGranted || legacy.isLimited;
+
+    return connectOk && scanOk && legacyOk;
+  }
+
+  /// Vrai si l'utilisateur a définitivement refusé (via "Ne plus demander"),
+  /// auquel cas il faut le renvoyer vers les paramètres de l'app.
+  Future<bool> isPermanentlyDenied() async {
+    final connect = await Permission.bluetoothConnect.status;
+    final scan = await Permission.bluetoothScan.status;
+    return connect.isPermanentlyDenied || scan.isPermanentlyDenied;
+  }
 
   Future<List<BluetoothInfo>> getPairedDevices() async {
     try {
