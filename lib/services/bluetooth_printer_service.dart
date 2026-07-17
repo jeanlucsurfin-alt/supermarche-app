@@ -17,10 +17,15 @@ class BluetoothPrinterService {
   /// explicitement demander l'autorisation à l'utilisateur au moment venu).
   /// Retourne true si les permissions sont accordées.
   Future<bool> requestPermissions() async {
+    // Note : on ne demande PAS Permission.bluetooth (legacy). Dans le
+    // manifest, elle est déclarée avec android:maxSdkVersion="30", donc
+    // sur Android 12+ elle n'existe plus pour le système : la demander
+    // renvoie "denied" en permanence et bloquait à tort tout l'appareil.
+    // Sur Android <12 c'est une permission "normale", accordée
+    // automatiquement à l'installation — inutile de la demander au runtime.
     final statuses = await [
       Permission.bluetoothConnect,
       Permission.bluetoothScan,
-      Permission.bluetooth,
     ].request();
 
     // Sur Android <12, bluetoothConnect/bluetoothScan n'existent pas et
@@ -29,13 +34,11 @@ class BluetoothPrinterService {
     // explicitement refusée par l'utilisateur.
     final connect = statuses[Permission.bluetoothConnect];
     final scan = statuses[Permission.bluetoothScan];
-    final legacy = statuses[Permission.bluetooth];
 
     final connectOk = connect == null || connect.isGranted || connect.isLimited;
     final scanOk = scan == null || scan.isGranted || scan.isLimited;
-    final legacyOk = legacy == null || legacy.isGranted || legacy.isLimited;
 
-    return connectOk && scanOk && legacyOk;
+    return connectOk && scanOk;
   }
 
   /// Vrai si l'utilisateur a définitivement refusé (via "Ne plus demander"),
