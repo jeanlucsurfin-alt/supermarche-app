@@ -396,15 +396,34 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       // sans ouvrir le sélecteur d'impression PDF natif d'Android (qui ne
       // liste jamais les imprimantes Bluetooth brutes et ne servait donc
       // qu'à afficher une fenêtre vide/inutile à chaque vente).
-      final printed = await BluetoothPrinterService().printReceipt(sale);
-      if (mounted && !printed) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-                'Impossible d\'imprimer sur l\'imprimante Bluetooth (reçu PDF disponible)'),
-            backgroundColor: AppColors.danger,
-          ),
-        );
+      final printerService = BluetoothPrinterService();
+      final printed = await printerService.printReceipt(sale);
+      if (mounted) {
+        if (printed) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Reçu imprimé avec succès'),
+              backgroundColor: AppColors.success,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                  'Échec impression : ${printerService.lastError ?? "raison inconnue"}'),
+              backgroundColor: AppColors.danger,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+        // On laisse le temps au message de s'afficher avant de fermer
+        // l'écran, sinon le Navigator.pop() ci-dessous l'emporte avec lui
+        // avant qu'il soit visible.
+        await Future.delayed(
+            Duration(seconds: printed ? 2 : 4));
+      }
+      if (!printed) {
         // Repli sur le PDF si l'impression Bluetooth échoue malgré une
         // imprimante enregistrée (hors de portée, éteinte, etc.).
         await _generateReceipt(sale);
