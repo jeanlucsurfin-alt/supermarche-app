@@ -67,12 +67,25 @@ class BluetoothPrinterService {
   }
 
   Future<bool> connect(String macAddress) async {
-    try {
-      return await PrintBluetoothThermal.connect(macPrinterAddress: macAddress)
-          .timeout(const Duration(seconds: 8), onTimeout: () => false);
-    } catch (_) {
-      return false;
+    // Certaines imprimantes thermiques bon marché (confirmé avec le modèle
+    // 2Connet) échouent systématiquement au premier essai de connexion
+    // ("read failed, socket might closed or timeout") mais réussissent
+    // presque immédiatement au second essai. On réessaie donc une fois
+    // avant d'abandonner.
+    for (var attempt = 0; attempt < 2; attempt++) {
+      try {
+        final ok = await PrintBluetoothThermal.connect(
+                macPrinterAddress: macAddress)
+            .timeout(const Duration(seconds: 8), onTimeout: () => false);
+        if (ok) return true;
+      } catch (_) {
+        // On retente au tour suivant.
+      }
+      if (attempt == 0) {
+        await Future.delayed(const Duration(milliseconds: 500));
+      }
     }
+    return false;
   }
 
   Future<void> disconnect() async {
