@@ -218,11 +218,15 @@ class BluetoothPrinterService {
       final profile = await esc.CapabilityProfile.load();
       final generator = esc.Generator(esc.PaperSize.mm58, profile);
       final bytes = <int>[];
-      bytes += generator.reset();
+      // Note : on utilise addAll() plutôt que += ci-dessous, car
+      // List.operator+ renvoie une NOUVELLE liste au lieu de muter en
+      // place — bytes += ... reviendrait à réassigner bytes, impossible
+      // sur une variable final (erreur de compilation rencontrée).
+      bytes.addAll(generator.reset());
       for (final l in lines) {
-        bytes += generator.text(l);
+        bytes.addAll(generator.text(l));
       }
-      bytes += generator.feed(3);
+      bytes.addAll(generator.feed(3));
 
       _connection!.output.add(Uint8List.fromList(bytes));
       await _connection!.output.allSent
