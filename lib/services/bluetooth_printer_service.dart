@@ -1,5 +1,7 @@
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 import '../models/sale.dart';
 import '../services/database_service.dart';
 import '../utils/currency.dart';
@@ -11,6 +13,13 @@ class BluetoothPrinterService {
   BluetoothPrinterService._internal();
 
   final DatabaseService _db = DatabaseService();
+
+  // Connexion active maintenue en mémoire. flutter_bluetooth_serial gère la
+  // connexion sur un thread natif en arrière-plan (contrairement à
+  // print_bluetooth_thermal, qui bloquait le thread principal et causait
+  // des gels de l'app/ANR quand l'imprimante ne répondait pas au premier
+  // essai).
+  BluetoothConnection? _connection;
 
   /// Demande les permissions Bluetooth nécessaires (obligatoire sur
   /// Android 12+ : les déclarer dans le manifeste ne suffit pas, il faut
@@ -49,35 +58,30 @@ class BluetoothPrinterService {
     return connect.isPermanentlyDenied || scan.isPermanentlyDenied;
   }
 
-  Future<List<BluetoothInfo>> getPairedDevices() async {
+  Future<List<BluetoothDevice>> getPairedDevices() async {
     try {
-      return await PrintBluetoothThermal.pairedBluetooths;
+      return await FlutterBluetoothSerial.instance
+          .getBondedDevices()
+          .timeout(const Duration(seconds: 6), onTimeout: () => []);
     } catch (_) {
       return [];
     }
   }
 
-  Future<bool> get isConnected async {
-    try {
-      return await PrintBluetoothThermal.connectionStatus
-          .timeout(const Duration(seconds: 4), onTimeout: () => false);
-    } catch (_) {
-      return false;
-    }
-  }
+  bool get isConnected => _connection != null && _connection!.isConnected;
 
-  Future<bool> connect(String macAddress) async {
-    // Certaines imprimantes thermiques bon marché (confirmé avec le modèle
-    // 2Connet) échouent systématiquement au premier essai de connexion
-    // ("read failed, socket might closed or timeout") mais réussissent
-    // presque immédiatement au second essai. On réessaie donc une fois
-    // avant d'abandonner.
+  /// Connecte à l'adresse MAC donnée. Certaines imprimantes thermiques bon
+  /// marché (confirmé avec le modèle 2Connet) échouent systématiquement au
+  /// premier essai ("read failed, socket might closed or timeout") mais
+  /// réussissent presque immédiatement au second essai : on réessaie donc
+  /// une fois avant d'abandonner.
+  Future<bool> connect(String address) async {
     for (var attempt = 0; attempt < 2; attempt++) {
       try {
-        final ok = await PrintBluetoothThermal.connect(
-                macPrinterAddress: macAddress)
-            .timeout(const Duration(seconds: 8), onTimeout: () => false);
-        if (ok) return true;
+        final connection = await BluetoothConnection.toAddress(address)
+            .timeout(const Duration(seconds: 8));
+        _connection = connection;
+        return true;
       } catch (_) {
         // On retente au tour suivant.
       }
@@ -90,16 +94,18 @@ class BluetoothPrinterService {
 
   Future<void> disconnect() async {
     try {
-      await PrintBluetoothThermal.disconnect;
+      await _connection?.finish();
     } catch (_) {
       // Ignoré : l'imprimante était peut-être déjà déconnectée.
+    } finally {
+      _connection = null;
     }
   }
 
   /// Reconnecte automatiquement à l'imprimante enregistrée dans les
   /// paramètres, si elle n'est pas déjà connectée.
   Future<bool> ensureConnectedToSavedPrinter() async {
-    if (await isConnected) return true;
+    if (isConnected) return true;
 
     final address = await _db.getSetting('printerAddress');
     if (address == null || address.isEmpty) return false;
@@ -112,9 +118,9 @@ class BluetoothPrinterService {
     return address != null && address.isNotEmpty;
   }
 
-  Future<void> savePrinter(BluetoothInfo device) async {
-    await _db.setSetting('printerAddress', device.macAdress);
-    await _db.setSetting('printerName', device.name);
+  Future<void> savePrinter(BluetoothDevice device) async {
+    await _db.setSetting('printerAddress', device.address);
+    await _db.setSetting('printerName', device.name ?? device.address);
   }
 
   Future<String?> getSavedPrinterName() async {
@@ -148,7 +154,7 @@ class BluetoothPrinterService {
   /// compatible avec la plupart des imprimantes thermiques 58/80mm).
   Future<bool> printReceipt(Sale sale) async {
     final connected = await ensureConnectedToSavedPrinter();
-    if (!connected) return false;
+    if (!connected || _connection == null) return false;
 
     try {
       final storeName = await _db.getSetting('storeName');
@@ -194,11 +200,11 @@ class BluetoothPrinterService {
       lines.add('');
       lines.add('');
 
-      for (final line in lines) {
-        await PrintBluetoothThermal.writeString(
-          printText: PrintTextSize(size: 1, text: line),
-        ).timeout(const Duration(seconds: 3), onTimeout: () => false);
-      }
+      final text = lines.join('\n');
+      _connection!.output.add(Uint8List.fromList(utf8.encode('$text\n\n\n')));
+      await _connection!.output.allSent
+          .timeout(const Duration(seconds: 6), onTimeout: () {});
+
       return true;
     } catch (_) {
       return false;

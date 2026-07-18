@@ -1,6 +1,5 @@
-import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
+import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
 import 'package:flutter/material.dart';
-import 'package:permission_handler/permission_handler.dart';
 import '../services/bluetooth_printer_service.dart';
 import '../theme/app_theme.dart';
 
@@ -13,7 +12,7 @@ class PrinterSettingsScreen extends StatefulWidget {
 
 class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
   final BluetoothPrinterService _printerService = BluetoothPrinterService();
-  List<BluetoothInfo> _devices = [];
+  List<BluetoothDevice> _devices = [];
   String? _savedName;
   bool _loading = true;
   bool _connecting = false;
@@ -62,19 +61,19 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
     }
   }
 
-  Future<void> _selectDevice(BluetoothInfo device) async {
+  Future<void> _selectDevice(BluetoothDevice device) async {
     setState(() => _connecting = true);
-    final connected = await _printerService.connect(device.macAdress);
+    final connected = await _printerService.connect(device.address);
     if (connected) {
       await _printerService.savePrinter(device);
       setState(() {
-        _savedName = device.name;
+        _savedName = device.name ?? device.address;
         _connecting = false;
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Connecté à ${device.name}'),
+            content: Text('Connecté à ${device.name ?? device.address}'),
             backgroundColor: AppColors.success,
           ),
         );
@@ -146,7 +145,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                     const SizedBox(height: 16),
                     if (_permissionPermanentlyDenied)
                       OutlinedButton.icon(
-                        onPressed: openAppSettings,
+                        onPressed: FlutterBluetoothSerial.instance.openSettings,
                         icon: const Icon(Icons.settings_outlined, size: 18),
                         label: const Text('OUVRIR LES PARAMÈTRES DU TÉLÉPHONE'),
                       )
@@ -169,7 +168,8 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
               )
             else
               ..._devices.map((device) {
-                final isSelected = device.name == _savedName;
+                final name = device.name ?? device.address;
+                final isSelected = name == _savedName;
                 return Card(
                   margin: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
@@ -185,9 +185,9 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                       child: const Icon(Icons.print_outlined,
                           color: Colors.white, size: 18),
                     ),
-                    title: Text(device.name,
+                    title: Text(name,
                         style: const TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: Text(device.macAdress,
+                    subtitle: Text(device.address,
                         style: const TextStyle(fontSize: 11)),
                     trailing: isSelected
                         ? const Icon(Icons.check_circle_rounded,
