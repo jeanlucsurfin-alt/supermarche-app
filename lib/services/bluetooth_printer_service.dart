@@ -1,5 +1,5 @@
-import 'dart:convert';
 import 'dart:typed_data';
+import 'package:esc_pos_utils/esc_pos_utils.dart' as esc;
 import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../models/sale.dart';
@@ -210,8 +210,21 @@ class BluetoothPrinterService {
       lines.add('');
       lines.add('');
 
-      final text = lines.join('\n');
-      _connection!.output.add(Uint8List.fromList(utf8.encode('$text\n\n\n')));
+      // Beaucoup de mini-imprimantes thermiques génériques (dont le modèle
+      // "2Connet") ignorent silencieusement du texte brut envoyé sans
+      // protocole : elles attendent une vraie séquence de commandes
+      // ESC/POS, à commencer par une initialisation (ESC @). On génère donc
+      // les octets via esc_pos_utils au lieu d'un simple encodage texte.
+      final profile = await esc.CapabilityProfile.load();
+      final generator = esc.Generator(esc.PaperSize.mm58, profile);
+      final bytes = <int>[];
+      bytes += generator.reset();
+      for (final l in lines) {
+        bytes += generator.text(l);
+      }
+      bytes += generator.feed(3);
+
+      _connection!.output.add(Uint8List.fromList(bytes));
       await _connection!.output.allSent
           .timeout(const Duration(seconds: 6), onTimeout: () {});
 
