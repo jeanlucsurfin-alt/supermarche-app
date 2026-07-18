@@ -10,6 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.6
+  esc_pos_utils: ^1.1.0
 
   # Base de données locale
   sqflite: ^2.3.0
