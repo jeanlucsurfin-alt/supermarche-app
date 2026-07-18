@@ -26,6 +26,12 @@ jobs:
       - name: Installer les dépendances
         run: flutter pub get
 
+      - name: Corriger le namespace manquant de flutter_bluetooth_serial
+        run: |
+          GRADLE_FILE=$(find ~/.pub-cache -path "*flutter_bluetooth_serial-*/android/build.gradle" | head -n 1)
+          echo "Fichier trouvé : $GRADLE_FILE"
+          sed -i "/^android {/a\\    namespace 'io.github.edufolly.flutterbluetoothserial'" "$GRADLE_FILE"
+
       - name: Générer l'APK (release)
         run: flutter build apk --release
 
