@@ -37,7 +37,7 @@ dependencies:
   google_fonts: ^6.1.0
 
   # Impression thermique Bluetooth
-  print_bluetooth_thermal: ">=1.0.0 <2.0.0"
+  flutter_bluetooth_serial: ^0.4.0
   permission_handler: ^11.3.1
   
 dev_dependencies:
