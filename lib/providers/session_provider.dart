@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/employee.dart';
 import '../services/database_service.dart';
+import '../utils/pin_hash.dart';
 
 class SessionProvider extends ChangeNotifier {
   final DatabaseService _db = DatabaseService();
@@ -13,7 +14,8 @@ class SessionProvider extends ChangeNotifier {
   /// Retourne true si succès.
   Future<bool> login(String pin) async {
     final employees = await _db.getAllEmployees();
-    final match = employees.where((e) => e.pin == pin);
+    final match =
+        employees.where((e) => PinHash.verify(pin, e.pin));
     if (match.isEmpty) return false;
 
     _currentEmployee = match.first;

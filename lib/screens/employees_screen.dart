@@ -45,7 +45,10 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
   Future<void> _openEditDialog({Employee? employee}) async {
     final lang = context.read<LocaleProvider>().language;
     final nameController = TextEditingController(text: employee?.name ?? '');
-    final pinController = TextEditingController(text: employee?.pin ?? '');
+    // Le PIN n'est plus jamais pré-rempli : depuis le hachage, la base ne
+    // contient plus le PIN en clair, seulement son empreinte. Laisser ce
+    // champ vide en modification signifie "ne pas changer le PIN".
+    final pinController = TextEditingController();
     EmployeeRole selectedRole = employee?.role ?? EmployeeRole.caissier;
 
     final saved = await showDialog<bool>(
@@ -78,8 +81,12 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
               const SizedBox(height: 12),
               TextField(
                 controller: pinController,
-                decoration:
-                    InputDecoration(labelText: tr(lang, 'employees_pin')),
+                decoration: InputDecoration(
+                  labelText: tr(lang, 'employees_pin'),
+                  helperText: employee != null
+                      ? 'Laisser vide pour conserver le PIN actuel'
+                      : null,
+                ),
                 keyboardType: TextInputType.number,
                 maxLength: 4,
                 obscureText: true,
@@ -93,8 +100,13 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
             ),
             ElevatedButton(
               onPressed: () async {
+                final pinText = pinController.text.trim();
+                final pinRequired = employee == null; // création
+                final pinInvalid =
+                    pinText.isNotEmpty && pinText.length != 4;
                 if (nameController.text.trim().isEmpty ||
-                    pinController.text.trim().length != 4) {
+                    (pinRequired && pinText.length != 4) ||
+                    pinInvalid) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text(
@@ -108,7 +120,9 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                   id: employee?.id,
                   name: nameController.text.trim(),
                   role: selectedRole,
-                  pin: pinController.text.trim(),
+                  // Chaîne vide = "ne pas changer le PIN", géré côté
+                  // updateEmployee() dans DatabaseService.
+                  pin: pinText,
                 );
                 if (employee == null) {
                   await _db.insertEmployee(newEmployee);

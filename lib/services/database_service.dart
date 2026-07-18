@@ -17,6 +17,7 @@ import '../models/purchase_order.dart';
 import '../models/expense.dart';
 import '../models/promotion.dart';
 import '../models/activity_log.dart';
+import '../utils/pin_hash.dart';
 
 class DatabaseService {
   static final DatabaseService _instance = DatabaseService._internal();
@@ -34,32 +35,37 @@ class DatabaseService {
     final path = join(await getDatabasesPath(), 'fafoutt_store.db');
     return await openDatabase(
       path,
-      version: 16,
+      version: 17,
       onCreate: _onCreate,
       onUpgrade: (db, oldVersion, newVersion) async {
-        await db.execute('DROP TABLE IF EXISTS sale_items');
-        await db.execute('DROP TABLE IF EXISTS sales');
-        await db.execute('DROP TABLE IF EXISTS products');
-        await db.execute('DROP TABLE IF EXISTS employees');
-        await db.execute('DROP TABLE IF EXISTS suppliers');
-        await db.execute('DROP TABLE IF EXISTS stock_movements');
-        await db.execute('DROP TABLE IF EXISTS categories');
-        await db.execute('DROP TABLE IF EXISTS employee_shifts');
-        await db.execute('DROP TABLE IF EXISTS customers');
-        await db.execute('DROP TABLE IF EXISTS credit_payments');
-        await db.execute('DROP TABLE IF EXISTS app_settings');
-        await db.execute('DROP TABLE IF EXISTS cash_closings');
-        await db.execute('DROP TABLE IF EXISTS sale_returns');
-        await db.execute('DROP TABLE IF EXISTS sale_return_items');
-        await db.execute('DROP TABLE IF EXISTS purchase_orders');
-        await db.execute('DROP TABLE IF EXISTS purchase_order_items');
-        await db.execute('DROP TABLE IF EXISTS expenses');
-        await db.execute('DROP TABLE IF EXISTS promotions');
-        await db.execute('DROP TABLE IF EXISTS activity_logs');
-        await db.execute('DROP TABLE IF EXISTS expense_categories');
-        await _onCreate(db, newVersion);
+        // ATTENTION : cette fonction supprimait auparavant TOUTES les
+        // tables (ventes, produits, clients...) à chaque changement de
+        // version, ce qui aurait effacé définitivement les données réelles
+        // du magasin à la prochaine mise à jour. Ne plus jamais utiliser
+        // DROP TABLE ici — toute évolution de schéma doit se faire via des
+        // migrations qui préservent les données existantes (ALTER TABLE,
+        // UPDATE...), ajoutées ci-dessous par palier de version.
+        if (oldVersion < 17) {
+          await _migratePinsToHashed(db);
+        }
       },
     );
+  }
+
+  /// Migration v17 : les PIN employés étaient stockés en clair dans la
+  /// base. On les remplace par un hachage SHA-256 salé (voir PinHash),
+  /// irréversible — après cette migration, le PIN d'origine n'est plus
+  /// récupérable, seule sa vérification reste possible.
+  Future<void> _migratePinsToHashed(Database db) async {
+    final employees = await db.query('employees');
+    for (final emp in employees) {
+      final currentPin = emp['pin'] as String?;
+      if (currentPin == null || currentPin.isEmpty) continue;
+      if (PinHash.isHashed(currentPin)) continue; // déjà migré
+      final hashed = PinHash.hash(currentPin);
+      await db.update('employees', {'pin': hashed},
+          where: 'id = ?', whereArgs: [emp['id']]);
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -266,7 +272,7 @@ class DatabaseService {
     await db.insert('employees', {
       'name': 'Administrateur',
       'role': 'admin',
-      'pin': '0000',
+      'pin': PinHash.hash('0000'),
     });
 
     await db.execute('''
@@ -932,13 +938,24 @@ class DatabaseService {
 
   Future<int> insertEmployee(Employee employee) async {
     final db = await database;
-    return await db.insert('employees', employee.toMap()..remove('id'));
+    final map = employee.toMap()..remove('id');
+    map['pin'] = PinHash.hash(employee.pin);
+    return await db.insert('employees', map);
   }
 
   Future<void> updateEmployee(Employee employee) async {
     final db = await database;
-    await db.update('employees', employee.toMap(),
-        where: 'id = ?', whereArgs: [employee.id]);
+    final map = employee.toMap();
+    if (employee.pin.isEmpty) {
+      // Champ PIN laissé vide dans le formulaire de modification : on
+      // conserve le PIN (haché) existant au lieu de l'écraser — impossible
+      // de pré-remplir le champ avec le PIN d'origine puisqu'un hachage
+      // est à sens unique.
+      map.remove('pin');
+    } else {
+      map['pin'] = PinHash.hash(employee.pin);
+    }
+    await db.update('employees', map, where: 'id = ?', whereArgs: [employee.id]);
   }
 
   Future<void> deleteEmployee(int id) async {
