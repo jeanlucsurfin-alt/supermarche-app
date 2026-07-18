@@ -26,11 +26,29 @@ jobs:
       - name: Installer les dépendances
         run: flutter pub get
 
-      - name: Corriger le namespace manquant de flutter_bluetooth_serial
+      - name: Corriger le namespace et le compileSdkVersion de flutter_bluetooth_serial
         run: |
           GRADLE_FILE=$(find ~/.pub-cache -path "*flutter_bluetooth_serial-*/android/build.gradle" | head -n 1)
           echo "Fichier trouvé : $GRADLE_FILE"
-          sed -i "/^android {/a\\    namespace 'io.github.edufolly.flutterbluetoothserial'" "$GRADLE_FILE"
+
+          # Namespace manquant (obligatoire depuis AGP 8+)
+          if ! grep -q "namespace" "$GRADLE_FILE"; then
+            sed -i "/^android {/a\\    namespace 'io.github.edufolly.flutterbluetoothserial'" "$GRADLE_FILE"
+          fi
+
+          # compileSdkVersion trop ancien (plugin abandonné depuis 2021) :
+          # il ne connaît pas les attributs Android récents comme
+          # android:attr/lStar (API 31+), ce qui fait échouer la fusion
+          # des ressources ("AAPT: error: resource android:attr/lStar not
+          # found"). On force une version récente.
+          if grep -q "compileSdkVersion" "$GRADLE_FILE"; then
+            sed -i -E "s/compileSdkVersion [0-9]+/compileSdkVersion 34/" "$GRADLE_FILE"
+          else
+            sed -i "/^android {/a\\    compileSdkVersion 34" "$GRADLE_FILE"
+          fi
+
+          echo "--- Contenu corrigé ---"
+          cat "$GRADLE_FILE"
 
       - name: Générer l'APK (release)
         run: flutter build apk --release
