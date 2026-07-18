@@ -1,5 +1,5 @@
 import 'dart:typed_data';
-import 'package:esc_pos_utils_plus/esc_pos_utils.dart' as esc;
+import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart' as esc;
 import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../models/sale.dart';
