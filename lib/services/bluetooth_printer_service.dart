@@ -21,6 +21,9 @@ class BluetoothPrinterService {
   // essai).
   BluetoothConnection? _connection;
 
+  // Dernière raison d'échec détaillée, pour affichage/diagnostic côté UI.
+  String? lastError;
+
   /// Demande les permissions Bluetooth nécessaires (obligatoire sur
   /// Android 12+ : les déclarer dans le manifeste ne suffit pas, il faut
   /// explicitement demander l'autorisation à l'utilisateur au moment venu).
@@ -76,14 +79,15 @@ class BluetoothPrinterService {
   /// réussissent presque immédiatement au second essai : on réessaie donc
   /// une fois avant d'abandonner.
   Future<bool> connect(String address) async {
+    lastError = null;
     for (var attempt = 0; attempt < 2; attempt++) {
       try {
         final connection = await BluetoothConnection.toAddress(address)
             .timeout(const Duration(seconds: 8));
         _connection = connection;
         return true;
-      } catch (_) {
-        // On retente au tour suivant.
+      } catch (e) {
+        lastError = 'Échec connexion (essai ${attempt + 1}) : $e';
       }
       if (attempt == 0) {
         await Future.delayed(const Duration(milliseconds: 500));
@@ -108,7 +112,10 @@ class BluetoothPrinterService {
     if (isConnected) return true;
 
     final address = await _db.getSetting('printerAddress');
-    if (address == null || address.isEmpty) return false;
+    if (address == null || address.isEmpty) {
+      lastError = 'Aucune adresse imprimante enregistrée';
+      return false;
+    }
 
     return await connect(address);
   }
@@ -154,7 +161,10 @@ class BluetoothPrinterService {
   /// compatible avec la plupart des imprimantes thermiques 58/80mm).
   Future<bool> printReceipt(Sale sale) async {
     final connected = await ensureConnectedToSavedPrinter();
-    if (!connected || _connection == null) return false;
+    if (!connected || _connection == null) {
+      lastError ??= 'Connexion Bluetooth indisponible';
+      return false;
+    }
 
     try {
       final storeName = await _db.getSetting('storeName');
@@ -206,7 +216,8 @@ class BluetoothPrinterService {
           .timeout(const Duration(seconds: 6), onTimeout: () {});
 
       return true;
-    } catch (_) {
+    } catch (e) {
+      lastError = 'Échec envoi des données : $e';
       return false;
     }
   }

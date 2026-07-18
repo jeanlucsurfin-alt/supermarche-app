@@ -314,13 +314,25 @@ class _SaleDetailSheetState extends State<_SaleDetailSheet> {
         // sans passer par la fenêtre de sélection d'impression d'Android
         // (qui ne connaît pas les imprimantes Bluetooth brutes).
         final ok = await printerService.printReceipt(sale);
-        if (!ok && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                  "Échec de l'impression. Vérifiez que l'imprimante est allumée et à proximité."),
-            ),
-          );
+        if (mounted) {
+          if (ok) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Reçu imprimé avec succès'),
+                backgroundColor: AppColors.success,
+                duration: Duration(seconds: 2),
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                    'Échec impression : ${printerService.lastError ?? "raison inconnue"}'),
+                backgroundColor: AppColors.danger,
+                duration: const Duration(seconds: 4),
+              ),
+            );
+          }
         }
       } else {
         // Aucune imprimante Bluetooth enregistrée dans Paramètres :
