@@ -59,7 +59,8 @@ class BluetoothPrinterService {
 
   Future<bool> get isConnected async {
     try {
-      return await PrintBluetoothThermal.connectionStatus;
+      return await PrintBluetoothThermal.connectionStatus
+          .timeout(const Duration(seconds: 4), onTimeout: () => false);
     } catch (_) {
       return false;
     }
@@ -67,7 +68,8 @@ class BluetoothPrinterService {
 
   Future<bool> connect(String macAddress) async {
     try {
-      return await PrintBluetoothThermal.connect(macPrinterAddress: macAddress);
+      return await PrintBluetoothThermal.connect(macPrinterAddress: macAddress)
+          .timeout(const Duration(seconds: 8), onTimeout: () => false);
     } catch (_) {
       return false;
     }
@@ -182,7 +184,7 @@ class BluetoothPrinterService {
       for (final line in lines) {
         await PrintBluetoothThermal.writeString(
           printText: PrintTextSize(size: 1, text: line),
-        );
+        ).timeout(const Duration(seconds: 3), onTimeout: () => false);
       }
       return true;
     } catch (_) {
