@@ -170,6 +170,44 @@ class BluetoothPrinterService {
 
   /// Imprime un reçu de vente au format ticket de caisse (texte brut,
   /// compatible avec la plupart des imprimantes thermiques 58/80mm).
+  /// Nettoie une ligne avant envoi à l'imprimante : remplace les espaces
+  /// Unicode invisibles (insécable, fine insécable — utilisées par le
+  /// formatage des montants comme séparateur de milliers, ex. "1 200")
+  /// par une espace ASCII normale, et retire les accents français, car le
+  /// codepage par défaut de l'imprimante ne les encode pas forcément —
+  /// une seule ligne avec un caractère non supporté fait échouer tout
+  /// l'envoi ("Contains invalid characters").
+  String _sanitizeForPrinter(String input) {
+    const accentMap = {
+      'à': 'a', 'â': 'a', 'ä': 'a', 'á': 'a',
+      'é': 'e', 'è': 'e', 'ê': 'e', 'ë': 'e',
+      'î': 'i', 'ï': 'i', 'ì': 'i',
+      'ô': 'o', 'ö': 'o', 'ò': 'o',
+      'ù': 'u', 'û': 'u', 'ü': 'u',
+      'ç': 'c', 'ñ': 'n',
+      'À': 'A', 'Â': 'A', 'Ä': 'A', 'Á': 'A',
+      'É': 'E', 'È': 'E', 'Ê': 'E', 'Ë': 'E',
+      'Î': 'I', 'Ï': 'I', 'Ì': 'I',
+      'Ô': 'O', 'Ö': 'O', 'Ò': 'O',
+      'Ù': 'U', 'Û': 'U', 'Ü': 'U',
+      'Ç': 'C', 'Ñ': 'N',
+    };
+    var result = input
+        .replaceAll('\u00A0', ' ') // espace insécable
+        .replaceAll('\u202F', ' ') // espace fine insécable
+        .replaceAll('\u2009', ' '); // espace fine
+    accentMap.forEach((accented, plain) {
+      result = result.replaceAll(accented, plain);
+    });
+    // Filet de sécurité : tout caractère restant hors ASCII imprimable
+    // est remplacé par un '?' plutôt que de faire échouer l'impression.
+    result = result.replaceAllMapped(
+      RegExp(r'[^\x20-\x7E]'),
+      (_) => '?',
+    );
+    return result;
+  }
+
   Future<bool> printReceipt(Sale sale) async {
     final connected = await ensureConnectedToSavedPrinter();
     if (!connected || _connection == null) {
@@ -235,7 +273,7 @@ class BluetoothPrinterService {
       // sur une variable final (erreur de compilation rencontrée).
       bytes.addAll(generator.reset());
       for (final l in lines) {
-        bytes.addAll(generator.text(l));
+        bytes.addAll(generator.text(_sanitizeForPrinter(l)));
       }
       bytes.addAll(generator.feed(3));
 
