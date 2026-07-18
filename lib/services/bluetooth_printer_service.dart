@@ -98,7 +98,10 @@ class BluetoothPrinterService {
 
   Future<void> disconnect() async {
     try {
-      await _connection?.finish();
+      await _connection?.finish().timeout(
+            const Duration(seconds: 3),
+            onTimeout: () {},
+          );
     } catch (_) {
       // Ignoré : l'imprimante était peut-être déjà déconnectée.
     } finally {
@@ -106,10 +109,18 @@ class BluetoothPrinterService {
     }
   }
 
-  /// Reconnecte automatiquement à l'imprimante enregistrée dans les
-  /// paramètres, si elle n'est pas déjà connectée.
+  /// Reconnecte systématiquement à l'imprimante enregistrée dans les
+  /// paramètres. On ne réutilise pas une connexion existante : certaines
+  /// imprimantes thermiques (confirmé avec le modèle 2Connet) ferment la
+  /// connexion de leur côté juste après un travail d'impression, mais
+  /// `BluetoothConnection.isConnected` côté téléphone ne détecte pas
+  /// toujours cette fermeture à distance — réutiliser l'ancienne connexion
+  /// écrivait alors dans le vide, sans erreur ni impression, sur les
+  /// tentatives suivantes.
   Future<bool> ensureConnectedToSavedPrinter() async {
-    if (isConnected) return true;
+    if (_connection != null) {
+      await disconnect();
+    }
 
     final address = await _db.getSetting('printerAddress');
     if (address == null || address.isEmpty) {
